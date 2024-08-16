@@ -9,3 +9,14 @@ class ValidationException(Exception):
         
     def __str__(self):
         return f'{self.status_code} - {self.field_name}: {self.message}'
+
+
+class ConsumerValidationError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+        
+class CompanyValidationError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message

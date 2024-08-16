@@ -1,11 +1,8 @@
-import tkinter as tk
-from tkinter import messagebox
 from typing import Optional
 from pydantic import BaseModel, field_validator, model_validator
+from dateutil.parser import parse
+from classes.error_except import CompanyValidationError, ConsumerValidationError
 from globals.global_vars import glob_vals
-from dateutil.parser import parse, ParserError
-
-date_formats = ["%d-%m-%Y", "%d.%m.%Y", "%d:%m:%Y", "%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y"]
 
 class Company_validation(BaseModel):
     # Mandatory fields
@@ -19,50 +16,43 @@ class Company_validation(BaseModel):
     Company_Surname: Optional[str] = ''
     Company_phone1: Optional[str] = ''
     Company_email1: Optional[str] = ''
-    Company_Street: Optional[str] = ''
+    Company_Street: Optional[str] = ''   
     Company_Town: Optional[str] = ''
-    Company_Postbox: Optional[str] = ''
+    Company_Postbox: Optional[str] = ''   
 
     @field_validator('Company_id', 'Company_FilialId', mode='before')
-    def validate_positive_data(cls, value):
-        try:
-            value = int(value)
-        except (ValueError, TypeError):
-            raise ValueError(f"Compagny Id must be an integer between 1 and 99999, provided {value}")
-        
+    def validate_positive_data(cls, value, info):
+        value = int(value)
         if value <= 1 or value > 99999:
-            raise ValueError(f"Company Id must be between 1 and 99999, provided {value}")
+            raise CompanyValidationError(f"Value {value} is out of range for {info.field_name}. Must be between 2 and 99999.")
         return value
 
     @field_validator('Company_ValidUntil', 'Company_ValidFrom', mode='before')
     def validate_date_format(cls, value, info):
         global glob_vals
-
-        non_empty_fields = ['Company_ValidUntil', 'Participant_ValidUntil']
-
-        if info.field_name in non_empty_fields and value == '':
-            raise ValueError(f"{info.field_name} cannot be empty")
-
-        if value == '':
-            return value
-
-        try:
-            date_obj = parse(value, fuzzy=False)
-            formatted_date = date_obj.strftime(glob_vals['date_format_val'])
-            return formatted_date
         
-        except (ParserError, ValueError) as e:
-            raise ValueError(f"Date format for '{value}' is not supported or invalid: {str(e)}")
+        if value:
+            try:
+                date_obj = parse(value, fuzzy=False)
+                formatted_date = date_obj.strftime(glob_vals['date_format_val'])
+                return formatted_date
+            except ValueError:
+                raise CompanyValidationError(f"Invalid date format for {info.field_name}. Must be in the format {glob_vals['date_format_val']}.")
+        return value
 
     @model_validator(mode='before')
     def check_mandatory_fields(cls, values):
         mandatory_fields = ['Company_id', 'Company_Name', 'Company_ValidUntil']
-
         for field in mandatory_fields:
             if not values.get(field):
-                raise ValueError(f"The field {field} is mandatory and cannot be empty.")
-
+                raise CompanyValidationError(f"The field {field} is mandatory and cannot be empty.")
         return values
+
+
+
+from typing import Optional
+from pydantic import BaseModel, field_validator, model_validator
+from dateutil.parser import parse
 
 class Consumer_validation(BaseModel):
     # Mandatory fields
@@ -88,51 +78,37 @@ class Consumer_validation(BaseModel):
     Participant_LPN3: Optional[str] = ''
 
     @field_validator('Participant_Id', 'Company_FilialId', mode='before')
-    def validate_positive_data(cls, value):
-        try:
-            value = int(value)
-        except (ValueError, TypeError):
-            raise ValueError(f"Compagny Id must be an integer between 1 and 99999, provided {value}")
-        
+    def validate_positive_data(cls, value, info):
+        value = int(value)
         if value < 1 or value > 99999:
-            raise ValueError(f"Compagny Id must be between 1 and 99999, provided {value}")
+            raise ConsumerValidationError(f" Value {value}  out of range for {info.field_name}. Must be between 1 and 99999.")
         return value
 
-    @field_validator('Participant_ValidUntil', 'Participant_ValidFrom', mode='before')
-    def validate_date_format(cls, value, info):
-        if value == '':
-            return KeyError
 
-        try:
-            date_obj = parse(value, fuzzy=False)
-            formatted_date = date_obj.strftime(glob_vals['date_format_val'])
-            return formatted_date
-        
-        except (ParserError, ValueError) as e:
-            raise ValueError(f"Date format for '{value}' is not supported or invalid: {str(e)}")
+
+    @field_validator('Participant_ValidUntil', 'Participant_ValidFrom', mode='before')
+    def validate_date_format(cls, value, info):        
+        global glob_vals
+
+        if value:
+            try:
+                date_obj = parse(value, fuzzy=False)
+                formatted_date = date_obj.strftime(glob_vals['date_format_val'])
+                return formatted_date
+            except ValueError:
+                raise CompanyValidationError(f"Invalid date format for {info.field_name}. Must be in the format {glob_vals['date_format_val']}.")
+        return value
 
     @model_validator(mode='before')
     def check_mandatory_fields(cls, values):
         mandatory_fields = ['Participant_Id', 'Participant_Firstname', 'Participant_Surname', 'Participant_CardNumber', 'Participant_LPN1', 'Company_id']
-
         for field in mandatory_fields:
             if not values.get(field):
-                raise ValueError(f"The field {field} is mandatory and cannot be empty.")
-
+                raise ConsumerValidationError(f"The field {field} is mandatory and cannot be empty.")
         return values
-    
+
     @field_validator('Participant_Type', mode='before')
     def validate_ptcpt_type(cls, value: int):
         if value not in [2, 6]:
-            raise ValueError(f"Participant Type must be either 2 or 6, provided is {value}")
+            raise ConsumerValidationError(f"Invalid value {value} for Participant_Type. Must be 2 or 6.")
         return value
-
-def validate_instance(instance):
-    try:
-        instance.validate()
-        return 200  # OK status
-    except Exception as e:
-        raise ValidationException(str(e))
-
-class ValidationException(Exception):
-    pass

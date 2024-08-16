@@ -1,10 +1,10 @@
 import customtkinter as ctk
-from tkinter import StringVar, filedialog, messagebox, tk
+from tkinter import StringVar, filedialog, messagebox
 from api.api_media import create_company, create_participant, get_company_details, get_participant
-from classes.error_except import ValidationException
+from classes.error_except import CompanyValidationError, ConsumerValidationError
 from functions.business_logic import get_data
 from functions.load_data import read_data, read_data_with_header
-from classes.validator_class import Company_validation, Consumer_validation, validate_instance
+from classes.validator_class import Company_validation, Consumer_validation
 from config.log_config import logger
 from functions.data_format import generate_unique_random
 from functions.dict_xml import consumer_to_xml, contract_to_xml
@@ -73,7 +73,7 @@ class CSVLoaderApp(ctk.CTk):
 
         # File path input section
         ctk.CTkLabel(file_data_frame, text="File Path:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
-        self.path_entry = ctk.CTkEntry(file_data_frame, width=400)
+        self.path_entry = ctk.CTkEntry(file_data_frame, width=400 )
         self.path_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
         self.browse_button = ctk.CTkButton(file_data_frame, text="Browse", command=self.browse_file)
@@ -198,12 +198,13 @@ class CSVLoaderApp(ctk.CTk):
         file_path = self.path_entry.get()
         file_data = read_data_with_header(file_path,header_state)  
         
-        print("\n--------------------- CSV FILE DATA--------------------",type(file_data))
+        print("\n --------------------- CSV FILE DATA-------------------- ",type(file_data))
         print(file_data)
             
             
-
+        print("\n --------------------- SELECT FIELDS -------------------- ")
         mymappingdict={}
+        
         for label, dropdown in self.dropdowns:
             if dropdown.get():
                 mymappingdict[label]=dropdown.get()
@@ -213,107 +214,121 @@ class CSVLoaderApp(ctk.CTk):
         for name, header in self.optional_fields:
             mymappingdict[name]=header
             
-        print("\n --------------------- SELECT FIELDS --------------------",type(mymappingdict))
+        print(type(mymappingdict))
         print(mymappingdict)
         
         
         
-        print("\n --------------------- GET DATA FROM SELECT FIELDS ----------------")
+        print("\n --------------------- GET DATA FROM SELECT FIELDS -------------------- ")
         data_rows=list()
         for row in file_data: # run on each row
             newdict=dict()
             for k,v in mymappingdict.items(): # run on eaych k,v
                 newdict[k]=row.get(v,'ERROR')
+                print(k,v)
             data_rows.append(newdict)
             
         print(data_rows)
         
         
         
-        """ print("\n--------------------- VALIDATE DATA ----------------")
+        print("\n --------------------- VALIDATE DATA -------------------- ")
 
         mylistc = []
         mylistp = []
 
         for row in data_rows:
             try:
-                # Validate DATA for Company and Consumer
                 c = Company_validation(**row)
-                p = Consumer_validation(**row)
+                mylistc.append(c)
+            except CompanyValidationError as e:
+                error_message = str(e)
                 
-                # Manually trigger the validation
-                c_status = validate_instance(c)
-                p_status = validate_instance(p)
-
-                # Append to the list only if validation is successful
-                if c_status == 200:
-                    mylistc.append(c)
-                if p_status == 200:
-                    mylistp.append(p)
-
-            except ValidationException as e:
-                # Trigger pop-up with the error message
-                messagebox.showerror("Validation Error", str(e))
-                continue  # Continue with the next row
-
-        print(f"\nCompany List: {mylistc}")
-        print(f"\nConsumer List: {mylistp}") """
-        
-        
-        
-
-                    
-        
-        
-        
-        
-        
-        
-    def validate_data(data_rows):
-        mylistc = []
-        mylistp = []
-
-        for index, row in enumerate(data_rows, start=1):
+                
+                response = self.custom_retry_continue_dialog(
+                    "Company Data Validation", 
+                    f"Validation failed \n  {error_message}\n\n Do you want to retry or continue?"
+                )
+                logger.error(f"Validation Error: {error_message}")
+                
+                if response == "exit":
+                    return
+                
+                
+                
             try:
-                # Validate DATA for Company and Consumer
-                c = Company_validation(**row)
                 p = Consumer_validation(**row)
+                mylistp.append(p)
+            except ConsumerValidationError as e:
+                error_message = str(e)
                 
-                # Manually trigger the validation
-                c_status = validate_instance(c)
-                p_status = validate_instance(p)
+                # Here, refine the error message if necessary
+                response = self.custom_retry_continue_dialog(
+                    "Consumer Data Validation", 
+                    f"Validation failed \n {error_message}\n\n Do you want to retry or continue?"
+                )
+                logger.error(f"Validation Error: {error_message}")
+                
+                if response == "exit":
+                    return
 
-                # Append to the list only if validation is successful
-                if c_status == 200:
-                    mylistc.append(c)
-                if p_status == 200:
-                    mylistp.append(p)
 
-            except ValidationException as e:
-                # Create a custom dialog box
-                dialog = tk.Toplevel()
-                dialog.title("Validation Error")
-                
-                error_message = f"Error in row {index}:\n{str(e)}\n\nDo you want to continue?"
-                tk.Label(dialog, text=error_message, padx=20, pady=10).pack()
-                
-                def on_continue():
-                    dialog.destroy()
-                
-                def on_stop():
-                    dialog.destroy()
-                    raise SystemExit("Process stopped by user")
-                
-                tk.Button(dialog, text="Continue", command=on_continue).pack(side=tk.LEFT, padx=10, pady=10)
-                tk.Button(dialog, text="Stop", command=on_stop).pack(side=tk.RIGHT, padx=10, pady=10)
-                
-                dialog.wait_window()  # Wait for the dialog to be closed
 
         print(f"\nCompany List: {mylistc}")
         print(f"\nConsumer List: {mylistp}")
+        
+        
+        print("\n --------------------- EXTRACT COMPANY ID -------------------- ")
 
-        return mylistc, mylistp
-            
+        company_ids = set(row.get('Company_id') for row in data_rows if row.get('Company_id'))
+        print(company_ids)
+        
+
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+        
+    def custom_retry_continue_dialog(self,title, message):
+        dialog = ctk.CTkToplevel()
+        dialog.title(title)
+        dialog.geometry("500x200")
+        
+        response = None
+        
+        def on_continue():
+            nonlocal response
+            response = "continue"
+            dialog.destroy()
+
+        def on_exit():
+            nonlocal response
+            response = "exit"
+            dialog.destroy()
+        
+        ctk.CTkLabel(dialog, text=message, wraplength=400).pack(pady=10)
+        button_frame = ctk.CTkFrame(dialog)
+        button_frame.pack(pady=10)
+
+        retry_button = ctk.CTkButton(button_frame, text="Continue", command=on_continue)
+        retry_button.pack(side='left', padx=10)
+
+        continue_button = ctk.CTkButton(button_frame, text="Exit", command=on_exit)
+        continue_button.pack(side='right', padx=10)
+        
+        dialog.grab_set() 
+        dialog.wait_window()
+
+        return response
+ 
+        
+
         
         
         
@@ -330,25 +345,12 @@ class CSVLoaderApp(ctk.CTk):
         listCompany.append(company_data)
         print(f"\n {listCompany}")
  """
-    
-        
-        
-        
-        
-        
-        
+
         
         
         #print("--------------------- SELECT FILD MAPPING--------------------",type())
         #print()
-        
-        
-        
-        
-        
-        
 
-        
     def create_footer_frame(self):
         footer_frame = ctk.CTkFrame(self.main_frame)
         footer_frame.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
@@ -392,8 +394,11 @@ class CSVLoaderApp(ctk.CTk):
                 self.load_data_button.configure(state="Disabled")
                 logger.error(f"Selecting CSV file Failed with error {str(e)}...")       
                 messagebox.showerror("Error", "An error occurred - Selecting File")
-
+ 
     def load_file_data(self):
+        logger.debug("Load data Button Clicked ")
+        logger.info("Data Loading in progress . .. ")
+        
         path = self.path_entry.get()
         header_state = self.no_headers_var.get()
 
@@ -409,12 +414,14 @@ class CSVLoaderApp(ctk.CTk):
         
         if header_state == False:
             data = result
+            logger.success("Data loaded with headers . .. ")
             if data:
                 headers = data[0].keys()  
             else:
                 headers = []  
                           
         if header_state == True:
+            logger.success("Data loaded without headers . .. ")
             headers, data = result if result else ([], None)
 
         if not data:
@@ -426,6 +433,7 @@ class CSVLoaderApp(ctk.CTk):
                 dropdown.configure(values=[""] + list(headers))
                 dropdown.set("")
                 
+            logger.success("Data loaded . .. ")
             self.header_dropdown.configure(values=[""] + list(headers))
             self.header_dropdown.set("")
             self.check_mandatory_fields()
