@@ -1,8 +1,11 @@
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, field_validator, model_validator
-from dateutil.parser import parse
 from classes.error_except import CompanyValidationError, ConsumerValidationError
 from globals.global_vars import glob_vals
+from dateutil.parser import parse, ParserError
+from config.log_config import logger
+
 
 class Company_validation(BaseModel):
     # Mandatory fields
@@ -24,20 +27,22 @@ class Company_validation(BaseModel):
     def validate_positive_data(cls, value, info):
         value = int(value)
         if value <= 1 or value > 99999:
-            raise CompanyValidationError(f"Value {value} is out of range for {info.field_name}. Must be between 2 and 99999.")
+            raise CompanyValidationError(f"Value {value} is out of range for {info.field_name}. \n Must be between 2 and 99999.")
         return value
 
     @field_validator('Company_ValidUntil', 'Company_ValidFrom', mode='before')
     def validate_date_format(cls, value, info):
         global glob_vals
-        
+        init_format = glob_vals['date_format_val']
+        logger.info(f" Date Format selected by user : {init_format}")
         if value:
             try:
-                date_obj = parse(value, fuzzy=False)
-                formatted_date = date_obj.strftime(glob_vals['date_format_val'])
-                return formatted_date
+                date_obj = datetime.strptime(value, init_format)
+                return date_obj.strftime("%Y-%m-%d")
+            
             except ValueError:
-                raise CompanyValidationError(f"Invalid date format for {info.field_name}. Must be in the format {glob_vals['date_format_val']}.")
+                raise CompanyValidationError(f"Invalid date format for {info.field_name}. \n Data values in CSV file must be in selected format : {init_format}\n. Check your file or check your selected Date fromat ")
+            
         return value
 
     @model_validator(mode='before')
@@ -89,14 +94,16 @@ class Consumer_validation(BaseModel):
     @field_validator('Participant_ValidUntil', 'Participant_ValidFrom', mode='before')
     def validate_date_format(cls, value, info):        
         global glob_vals
-
+        init_format = glob_vals['date_format_val']
+        logger.info(f" Date Format selected by user : {init_format}")
         if value:
             try:
-                date_obj = parse(value, fuzzy=False)
-                formatted_date = date_obj.strftime(glob_vals['date_format_val'])
-                return formatted_date
+                date_obj = datetime.strptime(value, init_format)
+                return date_obj.strftime("%Y-%m-%d")
+            
             except ValueError:
-                raise CompanyValidationError(f"Invalid date format for {info.field_name}. Must be in the format {glob_vals['date_format_val']}.")
+                raise CompanyValidationError(f"Invalid date format for {info.field_name}. \n Data values in CSV file must be in selected format : {init_format}\n Check your file or check your selected Date fromat ")
+            
         return value
 
     @model_validator(mode='before')

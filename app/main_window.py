@@ -1,3 +1,4 @@
+import os
 import customtkinter as ctk
 from tkinter import StringVar, filedialog, messagebox
 from api.api_media import create_company, create_participant, get_company_details, get_participant
@@ -8,7 +9,10 @@ from classes.validator_class import Company_validation, Consumer_validation
 from config.log_config import logger
 from functions.data_format import generate_unique_random
 from functions.dict_xml import consumer_to_xml, contract_to_xml
+from functions.test_connect import test_zr_connection
+from functions.xml_resp_parser import company_xml_parser
 from globals.global_vars import data_csv, zr_data, glob_vals
+
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -50,7 +54,7 @@ class CSVLoaderApp(ctk.CTk):
 
         self.title("Customer Media Processor")
         self.geometry("1300x700")
-
+        
         self.optional_field_count = 0
         self.optional_fields = []
 
@@ -67,14 +71,23 @@ class CSVLoaderApp(ctk.CTk):
         self.create_sync_button()
         self.create_footer_frame()
 
+
+    def update_load_button_state(self, event=None):
+        path = self.path_entry.get().strip()
+        if path:
+            self.load_data_button.configure(state="normal")
+        else:
+            self.load_data_button.configure(state="disabled")
+            
     def create_file_input_frame(self):
         file_data_frame = ctk.CTkFrame(self.main_frame)
         file_data_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
 
         # File path input section
         ctk.CTkLabel(file_data_frame, text="File Path:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
-        self.path_entry = ctk.CTkEntry(file_data_frame, width=400 )
+        self.path_entry = ctk.CTkEntry(file_data_frame, width=400)
         self.path_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.path_entry.bind("<KeyRelease>", self.update_load_button_state)  # Bind key release to update button state
 
         self.browse_button = ctk.CTkButton(file_data_frame, text="Browse", command=self.browse_file)
         self.browse_button.grid(row=0, column=2, padx=5, pady=5)
@@ -113,10 +126,10 @@ class CSVLoaderApp(ctk.CTk):
         self.date_format_dropdown = ctk.CTkOptionMenu(file_data_frame, variable=self.date_format_var,
                                                     values=list(date_format_dict.keys()), width=100,
                                                     command=self.update_date_format)
-        
         self.date_format_dropdown.grid(row=1, column=8, padx=5, pady=5, sticky="ew")
 
         file_data_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9), weight=1)
+
 
         # global variable values
         #self.update_global_values()
@@ -188,113 +201,9 @@ class CSVLoaderApp(ctk.CTk):
         sync_frame.grid(row=4, column=0, padx=10, pady=10, sticky="ew")
         sync_frame.grid_columnconfigure(0, weight=1)
 
-        self.sync_button = ctk.CTkButton(sync_frame, text="Sync", command=self.missoulist, state="disabled")
+        self.sync_button = ctk.CTkButton(sync_frame, text="Sync", command=self.Main_Process, state="disabled")
         self.sync_button.grid(row=0, column=0, padx=5, pady=5, sticky="e")
-
-    def missoulist(self):
-        header_state = self.no_headers_var.get()
-        logger.debug(f"Header State : {header_state}")
-        
-        file_path = self.path_entry.get()
-        file_data = read_data_with_header(file_path,header_state)  
-        
-        print("\n --------------------- CSV FILE DATA-------------------- ",type(file_data))
-        print(file_data)
-            
-            
-        print("\n --------------------- SELECT FIELDS -------------------- ")
-        mymappingdict={}
-        
-        for label, dropdown in self.dropdowns:
-            if dropdown.get():
-                mymappingdict[label]=dropdown.get()
-            else:
-                mymappingdict[label]="NOSELECTED"
-                
-        for name, header in self.optional_fields:
-            mymappingdict[name]=header
-            
-        print(type(mymappingdict))
-        print(mymappingdict)
-        
-        
-        
-        print("\n --------------------- GET DATA FROM SELECT FIELDS -------------------- ")
-        data_rows=list()
-        for row in file_data: # run on each row
-            newdict=dict()
-            for k,v in mymappingdict.items(): # run on eaych k,v
-                newdict[k]=row.get(v,'ERROR')
-                print(k,v)
-            data_rows.append(newdict)
-            
-        print(data_rows)
-        
-        
-        
-        print("\n --------------------- VALIDATE DATA -------------------- ")
-
-        mylistc = []
-        mylistp = []
-
-        for row in data_rows:
-            try:
-                c = Company_validation(**row)
-                mylistc.append(c)
-            except CompanyValidationError as e:
-                error_message = str(e)
-                
-                
-                response = self.custom_retry_continue_dialog(
-                    "Company Data Validation", 
-                    f"Validation failed \n  {error_message}\n\n Do you want to retry or continue?"
-                )
-                logger.error(f"Validation Error: {error_message}")
-                
-                if response == "exit":
-                    return
-                
-                
-                
-            try:
-                p = Consumer_validation(**row)
-                mylistp.append(p)
-            except ConsumerValidationError as e:
-                error_message = str(e)
-                
-                # Here, refine the error message if necessary
-                response = self.custom_retry_continue_dialog(
-                    "Consumer Data Validation", 
-                    f"Validation failed \n {error_message}\n\n Do you want to retry or continue?"
-                )
-                logger.error(f"Validation Error: {error_message}")
-                
-                if response == "exit":
-                    return
-
-
-
-        print(f"\nCompany List: {mylistc}")
-        print(f"\nConsumer List: {mylistp}")
-        
-        
-        print("\n --------------------- EXTRACT COMPANY ID -------------------- ")
-
-        company_ids = set(row.get('Company_id') for row in data_rows if row.get('Company_id'))
-        print(company_ids)
-        
-
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-        
+  
     def custom_retry_continue_dialog(self,title, message):
         dialog = ctk.CTkToplevel()
         dialog.title(title)
@@ -326,30 +235,6 @@ class CSVLoaderApp(ctk.CTk):
         dialog.wait_window()
 
         return response
- 
-        
-
-        
-        
-        
-        # Extract Company id 
-        """ company_ids = set(row.get('Company_id') for row in data_rows if row.get('Company_id'))
-        print(f"\n {company_ids}")
-        
-        listCompany=list()
-        
-        for company in company_ids:
-            company_data = dict()
-            company_data = next((row for row in data_rows if row.get('Company_id') == company), None)
-            
-        listCompany.append(company_data)
-        print(f"\n {listCompany}")
- """
-
-        
-        
-        #print("--------------------- SELECT FILD MAPPING--------------------",type())
-        #print()
 
     def create_footer_frame(self):
         footer_frame = ctk.CTkFrame(self.main_frame)
@@ -373,7 +258,7 @@ class CSVLoaderApp(ctk.CTk):
 
 
         #self.confirm_button = ctk.CTkButton(footer_frame, text="Test & Confirm", command=self.test_confirm)
-        self.confirm_button = ctk.CTkButton(footer_frame, text="Test & Confirm", command=self.missoulist)
+        self.confirm_button = ctk.CTkButton(footer_frame, text="Test & Confirm", command=self.Main_Process)
         self.confirm_button.grid(row=0, column=8, padx=5, pady=10, sticky="e")
 
     def browse_file(self):
@@ -396,48 +281,58 @@ class CSVLoaderApp(ctk.CTk):
                 messagebox.showerror("Error", "An error occurred - Selecting File")
  
     def load_file_data(self):
-        logger.debug("Load data Button Clicked ")
-        logger.info("Data Loading in progress . .. ")
+        logger.debug("Load Data Button Clicked")
+        logger.info("Data Loading in progress...")
         
-        path = self.path_entry.get()
+        # Retrieve the file path and header state
+        path = self.path_entry.get().strip()
         header_state = self.no_headers_var.get()
 
+        # Check if the path is empty
         if not path:
             messagebox.showerror("Error", "Please enter a file path or choose a file.")
             return
 
-        result = read_data_with_header(path, header=header_state)
-        
+        # Attempt to read the data from the file
+        try:
+            result = read_data_with_header(path, header=header_state)
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
+            logger.error(f"Failed to load file: {str(e)}")
+            return
+
+        # Check if the result is valid
         if result is None:
             messagebox.showerror("Error", "Failed to load the file.")
             return
-        
-        if header_state == False:
-            data = result
-            logger.success("Data loaded with headers . .. ")
-            if data:
-                headers = data[0].keys()  
-            else:
-                headers = []  
-                          
-        if header_state == True:
-            logger.success("Data loaded without headers . .. ")
-            headers, data = result if result else ([], None)
 
+        # Process data based on header state
+        if header_state:
+            logger.success("Data loaded without headers...")
+            headers, data = result if result else ([], None)
+        else:
+            logger.success("Data loaded with headers...")
+            data = result
+            headers = data[0].keys() if data else []
+
+        # Check if the data is empty
         if not data:
             messagebox.showwarning("Warning", "The file appears to be empty.")
             return
 
+        # Update dropdowns with headers
         if headers:
             for label, dropdown in self.dropdowns:
                 dropdown.configure(values=[""] + list(headers))
                 dropdown.set("")
                 
-            logger.success("Data loaded . .. ")
             self.header_dropdown.configure(values=[""] + list(headers))
             self.header_dropdown.set("")
-            self.check_mandatory_fields()
-        
+            
+        # Additional processing
+        self.check_mandatory_fields()
+        logger.success("Data successfully loaded.")
+
     def add_optional_field(self):
         field_name = self.optional_field_var.get()
         header_value = self.header_var.get()
@@ -498,21 +393,95 @@ class CSVLoaderApp(ctk.CTk):
         )
 
         self.sync_button.configure(state="normal" if all_selected else "disabled")
-
-    def save_data_threaded(self):
-        try:
-            self.update_global_values()  
-            self.save_data()
-            # for x in lc for compagny
-            # for x in lp for ptcpt
-        finally:
-            self.close_loading_popup()
-
-    def test_confirm(self):
-        global zr_data
+        
+    def Main_Process(self):
+        
+        global glob_vals
+        template_ids = glob_vals
+        
+        header_state = self.no_headers_var.get()
+        logger.info(f"Header State : {header_state}")
+        
         file_path = self.path_entry.get()
+        file_data = read_data_with_header(file_path,header_state)  
+        
+        print("\n --------------------- CSV FILE DATA-------------------- ",type(file_data))
+        logger.debug(file_data)
+        logger.info(f"CSV file readed Success")
+
+            
+            
+        print("\n --------------------- SELECT FIELDS -------------------- ")
+        mymappingdict={}
+        
+        for label, dropdown in self.dropdowns:
+            if dropdown.get():
+                mymappingdict[label]=dropdown.get()
+            else:
+                mymappingdict[label]="NOSELECTED"
+                
+        for name, header in self.optional_fields:
+            mymappingdict[name]=header
+            
+        logger.debug(type(mymappingdict))
+        logger.debug(mymappingdict)
         
         
+        
+        print("\n --------------------- GET DATA FROM SELECT FIELDS -------------------- ")
+        data_rows=list()
+        for row in file_data: # run on each row
+            newdict=dict()
+            for k,v in mymappingdict.items(): # run on eaych k,v
+                newdict[k]=row.get(v,'ERROR')
+                #print(k,v)
+            data_rows.append(newdict)
+            logger.debug(newdict)
+            
+        
+        
+        print("\n --------------------- VALIDATE DATA -------------------- ")
+
+        for row in data_rows:  
+            # ---------------------------------------------------------------------------------------------- COMPANY VALIDATION LIST ----------------------------------------------------------------------------------------------
+            mylistc = []
+            try:
+                company_valid = Company_validation(**row)
+                mylistc.append(company_valid.dict())
+                
+            except CompanyValidationError as e:
+                error_message = str(e)
+                response = self.custom_retry_continue_dialog(
+                    "Company Data Validation", 
+                    f" -------------- Validation failed --------------  \n \n  {error_message}\n\n Do you want to retry or continue?"
+                )
+                logger.error(f"Validation Error: {error_message}")
+                
+                if response == "exit":
+                    return
+                
+            
+                
+            # ---------------------------------------------------------------------------------------------- CONSUMER VALIDATION LIST ----------------------------------------------------------------------------------------------
+            mylistp = []       
+            try:
+                particpant_valid = Consumer_validation(**row)
+                mylistp.append(particpant_valid.dict())
+                
+            except ConsumerValidationError as e:
+                error_message = str(e)
+                response = self.custom_retry_continue_dialog(
+                    "Consumer Data Validation", 
+                    f"-------------- Validation failed -------------- \n \n {error_message}\n\n Do you want to retry or continue?"
+                )
+                logger.error(f"Validation Error: {error_message}")
+                
+                if response == "exit":
+                    return
+                
+                
+# ----------------------------------------------------------------------------------------------TEST CONNECTION TO ZR  ----------------------------------------------------------------------------------------------
+        print(f"\n ------------------------------ TEST CONNECTION TO ZR  ------------------------------ \n")
         zr_data['zr_ip'] = self.zr_ip.get().strip()
         zr_data['zr_port'] = self.zr_port.get().strip()
         zr_data['username'] = self.username.get().strip()
@@ -520,193 +489,117 @@ class CSVLoaderApp(ctk.CTk):
         
         logger.debug(zr_data)        
         
-        # file as list of dict
-        rows_data = read_data(file_path)  
+        test_zr_connection(zr_data)  
+        print ("--------------------------------------------------------------------------------------------------------------- ")
 
-        # Get unique company IDs
-        company_ids = set(row.get('Company Number') for row in rows_data if row.get('Company Number'))
-        logger.debug(company_ids)
+# ---------------------------------------------------------------------------------------------- CONSUMER XML CONVERT  ----------------------------------------------------------------------------------------------
+        print(f"\n ------------------------------ Company List :  ------------------------------ \n")
+        logger.debug(f" Company List: \n {mylistc} \n")
+        logger.info(f" Company List: {len(mylistc)}")
         
-        # call ZR version 
-        #test_zr_connection(zr_data)  
+        print(f"\n ------------------------------ Participant List:  ------------------------------ \n")
+        logger.debug(f"Participant List: \n {mylistp} \n")
+        logger.info(f"Participant List:{len(mylistp)}")
 
-
-        # build List [ compagnyobject]
-        lc=[]
-        for company_data in rows_data:
-            data_contract = {
-                            "id": int(company_data.get('Company_id','')),
-                            "name": company_data.get('Company_Name',''),
-                            "xValidFrom": company_data.get('Company_ValidFrom', ''),
-                            "xValidUntil": company_data.get('Company_ValidUntil', ''),
-                            "filialId": 7077,
-                            "surname": company_data.get('Company_Surname', ''),
-                            "phone1": company_data.get('Company_phone1', ''),
-                            "email1": company_data.get('Company_email1', ''),
-                            "street": company_data.get('Company_Street', ''),
-                            "town": company_data.get('Company_Town', ''),
-                            "postbox": company_data.get('Company_Postbox', '')
-                        }
-            logger.debug(data_contract)
-            validated_company = Company_validation(**data_contract)   
-            lc.append(validated_company)
-        print(validated_company)
-        
-        # build list [ ptcpt object]
-        #lp=[]
+        #print(" --------------------- XML OUTPUT DATA PARTICIPANT -------------------- \n")
+        #for rowp in mylistp:
+            #xml_data_part = consumer_to_xml(rowp)
+            #logger.debug(xml_data_part)        
         
         
-        # for cmp in lc check compagny id on zr
-
-    def process_participants(self, company_id, rows_data, template_ids):
-        possible_numbers = set(range(1001))
-        logger.info(f"Processing participants for Company ID: {company_id}")
-
-        company_rows = [row for row in rows_data if row.get('Company_id') == company_id]
-        logger.info(company_rows)
+        #print(" --------------------- XML OUTPUT DATA COMPANY -------------------- \n")
+        #for rowc in mylistc:
+            #xml_data_comp = contract_to_xml(rowc)
+            #logger.debug(xml_data_comp)  
         
-        for row in company_rows:
-            participant_id = row.get('Participant_Contractid')
-            logger.debug(f"Processing Participant ID: {participant_id}")
+        
+# ---------------------------------------------------------------------------------------------- COMPANY IDS LIST ----------------------------------------------------------------------------------------------
+        print("\n --------------------- EXTRACT COMPANY ID -------------------- ")
+        company_ids = set(rowc.get('Company_id') for rowc in mylistc if rowc.get('Company_id'))
+        logger.info(company_ids)
+        print ("--------------------------------------------------------------------------------------------------------------- ")
 
-            if participant_id:
-                status_code, participant_details = get_participant(company_id, participant_id)
-                
-                if status_code != 404:
-                    logger.info(f"Participant ID {participant_id} found for Company ID {company_id}")
-                else:
-                    logger.info(f"Participant ID {participant_id} not found for Company ID {company_id}. Creating new participant . . .")
-                    
-                    # Create participant data
-                    card_nbm = generate_unique_random(possible_numbers)
-                    
-                    data_consumer = {
-                        "id": participant_id,
-                        "contractid": company_id,
-                        "xValidFrom": row.get('Participant_ValidFrom', '2000-01-01'),
-                        "xValidUntil": row.get('Participant_ValidUntil', '2025-01-01'),
-                        "filialId": row.get('Participant_FilialId', 7077),
-                        "firstName": row.get('Participant_Firstname', ''),
-                        "surname": row.get('Participant_Surname', ''),
-                        "ptcptType": row.get('Participant_Type', '3'),
-                        "cardno": card_nbm,
-                        "cardclass": row.get('Participant_Cardclass', '0'),
-                        "identificationType": row.get('Participant_IdentificationType', '51'),
-                        "validFrom": row.get('Participant_ValidFrom', '2020-01-01'),
-                        "validUntil": row.get('Participant_ValidUntil', '2025-01-01'),
-                        "admission": "",
-                        "ignorePresence": row.get('Participant_IgnorePresence', '0'),
-                        "present": row.get('Participant_Present', 'false'),
-                        "status": row.get('Participant_Status', '0'),
-                        "ptcptGrpNo": row.get('Participant_GrpNo', '-1'),
-                        "displayText": row.get('Participant_DisplayText', '-1'),
-                        "limit": row.get('Participant_Limit', '9999900'),
-                        "memo": "Note1",
-                        "delete": row.get('Participant_Delete', '0'),
-                        "lpn1": row.get('Participant_LPN1', 'NOLPN'),
-                        "lpn2": row.get('Participant_LPN2', 'NOLPN'),
-                        "lpn3": row.get('Participant_LPN3', 'NOLPN'),
-                    }
+        
 
-                    logger.debug(data_consumer)
-                    validated_consumer = Consumer_validation(**data_consumer)   
-                    consumer_xml = consumer_to_xml(validated_consumer.dict())
-                    logger.debug(f"Participant data: {consumer_xml}")
-                    
-                    ptcpt_type = row.get('Participant_Type', 3)
-                    if ptcpt_type == 2:
-                        template_id = template_ids["season_parker"]
-                    if ptcpt_type == 6:
-                        template_id = template_ids["pmvc"]
-                    else:
-                        template_id = template_ids.get("default", template_ids["season_parker"])
-                    
-                    status_code, result = create_participant(company_id, template_id, consumer_xml)
-                    
-                    if status_code == 201:
-                        logger.info(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
-                    else:
-                        logger.error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
+# ----------------------------------------------------------------------------------------------  PROCESSING DATA & SEND REQUESTS ----------------------------------------------------------------------------------------------
+        print("\n --------------------------  COMPANY's PROCESSING ---------------------------------------------------- ")
+        for rowc in mylistc:
+            company_id = rowc.get('Company_id')
 
-    def save_data(self):
-        global data_csv, rows_data, glob_vals
-        file_path = self.path_entry.get()
-
-        template_ids = glob_vals
-
-        logger.info("Starting api call process . . . ")
-
-        data_csv = {}
-        rows_data = []
-        unique_company_ids = set()
-
-        selected_columns = [(label, dropdown.get()) for label, dropdown in self.dropdowns if dropdown.get() != "No Column selected"]
-        selected_columns += [(name, header) for name, header in self.optional_fields]
-
-        column_indices = [self.dropdowns[0][1].cget("values").index(column) - 1 for _, column in selected_columns]
-
-        column_data, error = get_data(file_path, *column_indices)
-
-        if error:
-            logger.error(f"Failed to retrieve column data: {error}")
-            messagebox.showerror("Error", f"Failed to retrieve column data: {error}")
-            return
-
-        for row in column_data:
-            row_dict = {label: row[i] for i, (label, _) in enumerate(selected_columns)}
-            rows_data.append(row_dict)
-            
-            company_id = row_dict.get('Company_id')
-            
-            if company_id and company_id not in unique_company_ids:
-                logger.info(f"Data saved for company id : {company_id}")
-                unique_company_ids.add(company_id)
-
-        logger.info(f"Unique Company IDs: {', '.join(map(str, unique_company_ids))}")
-
-        for company_id in unique_company_ids:
             status_code, company_details = get_company_details(company_id)
-            if status_code != 404:
-                logger.info(f"Company ID {company_id} found")
-                
-                # Process participants for existing company
-                self.process_participants(company_id, rows_data, template_ids)
-            else:
-                logger.info(f"Company ID {company_id} not found")
-                
-                # Find the corresponding row data for this company_id
-                company_data = next((row for row in rows_data if row.get('Company_id') == company_id), None)
-                
-                if company_data:
-                    data_contract = {
-                            "id": int(company_data.get('Company_id')),
-                            "name": company_data.get('Company_Name'),
-                            "xValidFrom": company_data.get('Company_ValidFrom', ''),
-                            "xValidUntil": company_data.get('Company_ValidUntil', '2025-12-31'),
-                            "filialId": 7077,
-                            "surname": company_data.get('Company_Surname', 'NOSURNAME'),
-                            "phone1": company_data.get('Company_phone1', 'NONUMBER'),
-                            "email1": company_data.get('Company_email1', 'NOEMAIL'),
-                            "street": company_data.get('Company_Street', 'NOSTREET'),
-                            "town": company_data.get('Company_Town', 'NOTOWN'),
-                            "postbox": company_data.get('Company_Postbox', 'NOPOSTBOX')
-                        }
-                    
-                    
-                    logger.debug(data_contract)
-                    validated_company = Company_validation(**data_contract)   
-                    company_xml = contract_to_xml(validated_company.dict())
-                    logger.debug(f"Participant data: {company_xml}")
 
-                    status_code, result = create_company(company_xml)
-                    logger.debug(f"Status code : {status_code}")
+             #comp found 
+            if status_code != 404:
+                logger.info(f"Company ID {company_id} found in the list of company's")
+                logger.debug(company_details)
+                
+                id, name, _, _, _ = company_xml_parser(company_details)
+                logger.debug(f"id: {id}")
+                logger.debug(f"name: {name}")
+
+
+            
+            #comp not found 
+            if status_code == 404:
+                logger.info(f"Company ID {company_id} not found")
+                                
+                try:
+                    xml_comp_data = contract_to_xml(rowc)
+                    status_code, result = create_company(xml_comp_data)
+                    logger.debug(f"Status code: {status_code}")
+                    logger.debug(result)
                     
                     if status_code == 201:
-                        logger.info(f"Company ID {company_id} created successfully")
-                        # Process participants for newly created company
-                        self.process_participants(company_id, rows_data, template_ids)
+                        logger.info(f"Company ID {company_id} created successfully --------------- ")
                     else:
                         logger.error(f"Failed to create Company ID {company_id}. Status code: {status_code}")
-                        
-        logger.info("Data save process completed")
-        messagebox.showinfo("Success", "Data processing completed successfully!")
+                except Exception as e:
+                    logger.error(f"Error creating Company {company_id}: {e}")
+
+        print ("--------------------------------------------------------------------------------------------------------------- ")
+
+
+
+
+        print("\n --------------------------  PARTICPANT's PROCESSING ---------------------------------------------------- ")
+        for rowp in mylistp:
+            participant_id = rowp.get('Participant_Id')
+            company_id = rowp.get('Company_id')
+            
+            status_code, participant_details = get_participant(company_id, participant_id)
+
+            #comp found 
+            if status_code != 404:
+                logger.info(f"Participant ID {participant_id} found for Company ID {company_id}")
+                
+            if status_code == 404:
+                logger.info(f"Participant ID {participant_id} not found for Company ID {company_id}. Creating new participant . . .")
+
+                ptcpt_type = rowp.get('Participant_Type', 3)
+                if ptcpt_type == 2:
+                    template_id = template_ids["season_parker"]
+                if ptcpt_type == 6:
+                    template_id = template_ids["pmvc"]
+                if ptcpt_type == 6:
+                    template_id = template_ids["cmp"]
+                    
+                    
+                xml_ptcpt_data = consumer_to_xml(rowp)     
+                logger.debug(xml_ptcpt_data)                
+                status_code, result = create_participant(company_id, 3, xml_ptcpt_data)
+                                            
+                logger.info(f"Status code: {status_code}")
+                logger.debug(f"Status code: {status_code}")
+                logger.debug(result)
+                print("\n")
+                
+                
+                if status_code == 201:
+                    logger.info(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
+                    
+                if status_code == 500:
+                    logger.error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
+
+        print ("--------------------------------------------------------------------------------------------------------------- ")
+
+                    

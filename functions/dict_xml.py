@@ -3,29 +3,50 @@
 def contract_to_xml(data):
     xml_content = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
     xml_content += '<cm:contractDetail xmlns:cm="http://gsph.sub.com/cust/types">\n'
-    
+
     # Contract section
-    xml_content += '<cm:contract>\n'
-    xml_content += f'<cm:id>{data.get("id", "")}</cm:id>\n'
-    xml_content += f'<cm:name>{data.get("name", "")}</cm:name>\n'
-    xml_content += f'<cm:xValidFrom>{data.get("xValidFrom", "")}</cm:xValidFrom>\n'
-    xml_content += f'<cm:xValidUntil>{data.get("xValidUntil", "")}</cm:xValidUntil>\n'
-    xml_content += '</cm:contract>\n'
+    contract_fields = [
+        ("cm:id", data.get("Company_id", "")),
+        ("cm:name", data.get("Company_Name", "")),
+        ("cm:xValidFrom", data.get("Company_ValidFrom", "")),
+        ("cm:xValidUntil", data.get("Company_ValidUntil", ""))
+    ]
+    
+    if any(value for _, value in contract_fields):
+        xml_content += '<cm:contract>\n'
+        for tag, value in contract_fields:
+            if value:
+                xml_content += f'<{tag}>{value}</{tag}>\n'
+        xml_content += '</cm:contract>\n'
 
     # Person section
-    xml_content += '<cm:person>\n'
-    xml_content += f'<cm:surname>{data.get("surname", "")}</cm:surname>\n'
-    xml_content += f'<cm:phone1>{data.get("phone1", "")}</cm:phone1>\n'
-    xml_content += f'<cm:email1>{data.get("email1", "")}</cm:email1>\n'
-    xml_content += '</cm:person>\n'
+    person_fields = [
+        ("cm:surname", data.get("Company_Surname", "")),
+        ("cm:phone1", data.get("Company_phone1", "")),
+        ("cm:email1", data.get("Company_email1", ""))
+    ]
+    
+    if any(value for _, value in person_fields):
+        xml_content += '<cm:person>\n'
+        for tag, value in person_fields:
+            if value:
+                xml_content += f'<{tag}>{value}</{tag}>\n'
+        xml_content += '</cm:person>\n'
 
     # Address section
-    xml_content += '<cm:stdAddr>\n'
-    xml_content += f'<cm:street>{data.get("street", "")}</cm:street>\n'
-    xml_content += f'<cm:town>{data.get("town", "")}</cm:town>\n'
-    xml_content += f'<cm:postbox>{data.get("postbox", "")}</cm:postbox>\n'
-    xml_content += '</cm:stdAddr>\n'
+    address_fields = [
+        ("cm:street", data.get("Company_Street", "")),
+        ("cm:town", data.get("Company_Town", "")),
+        ("cm:postbox", data.get("Company_Postbox", ""))
+    ]
     
+    if any(value for _, value in address_fields):
+        xml_content += '<cm:stdAddr>\n'
+        for tag, value in address_fields:
+            if value:
+                xml_content += f'<{tag}>{value}</{tag}>\n'
+        xml_content += '</cm:stdAddr>\n'
+
     xml_content += '</cm:contractDetail>'
     return xml_content
 
@@ -35,40 +56,71 @@ def consumer_to_xml(data):
     xml_content += '<cm:consumerDetail xmlns:cm="http://gsph.sub.com/cust/types">\n'
     
     # Consumer section
-    xml_content += '<cm:consumer>\n'
-    xml_content += f'<cm:id>{data.get("id", "")}</cm:id>\n'
-    xml_content += f'<cm:contractid>{data.get("contractid", "")}</cm:contractid>\n'
-    xml_content += '</cm:consumer>\n'
+    consumer_fields = [
+        ("cm:id", data.get("Participant_Id", "")),
+        ("cm:contractid", data.get("Company_id", ""))
+    ]
     
+    if any(value for _, value in consumer_fields):
+        xml_content += '<cm:consumer>\n'
+        for tag, value in consumer_fields:
+            if value:
+                xml_content += f'<{tag}>{value}</{tag}>\n'
+        xml_content += '</cm:consumer>\n'
+
     # Person section
-    xml_content += '<cm:person>\n'
-    xml_content += f'<cm:firstName>{data.get("firstName", "")}</cm:firstName>\n'
-    xml_content += f'<cm:surname>{data.get("surname", "")}</cm:surname>\n'
-    xml_content += '</cm:person>\n'
+    person_fields = [
+        ("cm:firstName", data.get("Participant_Firstname", "")),
+        ("cm:surname", data.get("Participant_Surname", ""))
+    ]
     
+    if any(value for _, value in person_fields):
+        xml_content += '<cm:person>\n'
+        for tag, value in person_fields:
+            if value:
+                xml_content += f'<{tag}>{value}</{tag}>\n'
+        xml_content += '</cm:person>\n'
+
     # Identification section
-    xml_content += '<cm:identification>\n'
-    xml_content += f'<cm:cardno>{data.get("cardno", "")}</cm:cardno>\n'
-    xml_content += f'<cm:validFrom>{data.get("validFrom", "")}</cm:validFrom>\n'
-    xml_content += f'<cm:validUntil>{data.get("validUntil", "")}</cm:validUntil>\n'
+    identification_fields = [
+        ("cm:cardno", data.get("'Participant_CardNumber", "")),
+        ("cm:validFrom", data.get("Participant_ValidFrom", "")),
+        ("cm:validUntil", data.get("Participant_ValidUntil", "")),
+        ("cm:ptcptGrpNo", data.get("Participant_GrpNo", "")),
+        ("cm:status", data.get("Participant_Status", ""))
+    ]
     
-    # UsageProfile section inside Identification
-    xml_content += '<cm:usageProfile>\n'
-    xml_content += f'<cm:id>{data.get("usageProfileId", "")}</cm:id>\n'
-    xml_content += '</cm:usageProfile>\n'
+    usage_profile_id = data.get("usageProfileId", "")
     
-    xml_content += f'<cm:ptcptGrpNo>{data.get("ptcptGrpNo", "")}</cm:ptcptGrpNo>\n'
-    xml_content += f'<cm:status>{data.get("status", "")}</cm:status>\n'
-    xml_content += '</cm:identification>\n'
+    if any(value for _, value in identification_fields) or usage_profile_id:
+        xml_content += '<cm:identification>\n'
+        for tag, value in identification_fields:
+            if value:
+                xml_content += f'<{tag}>{value}</{tag}>\n'
+                
+        # UsageProfile section inside Identification
+        if usage_profile_id:
+            xml_content += '<cm:usageProfile>\n'
+            xml_content += f'<cm:id>{usage_profile_id}</cm:id>\n'
+            xml_content += '</cm:usageProfile>\n'
+        
+        xml_content += '</cm:identification>\n'
     
     # Additional fields
-    xml_content += f'<cm:lpn1>{data.get("lpn1", "")}</cm:lpn1>\n'
-    xml_content += f'<cm:lpn2>{data.get("lpn2", "")}</cm:lpn2>\n'
-    xml_content += f'<cm:lpn3>{data.get("lpn3", "")}</cm:lpn3>\n'
-    xml_content += f'<cm:userfield1>{data.get("userfield1", "")}</cm:userfield1>\n'
+    additional_fields = [
+        ("cm:lpn1", data.get("Participant_LPN1", "")),
+        ("cm:lpn2", data.get("Participant_LPN2", "")),
+        ("cm:lpn3", data.get("Participant_LPN3", "")),
+        ("cm:userfield1", data.get("userfield1", ""))
+    ]
     
+    for tag, value in additional_fields:
+        if value:
+            xml_content += f'<{tag}>{value}</{tag}>\n'
+
     xml_content += '</cm:consumerDetail>'
     return xml_content
+
 
 data_consumer = {
         "id": "25",
