@@ -81,6 +81,7 @@ class Consumer_validation(BaseModel):
     Participant_DisplayText: Optional[str] = ''
     Participant_LPN2: Optional[str] = ''   
     Participant_LPN3: Optional[str] = ''
+    Money_Balance: Optional[str] = ''
 
     @field_validator('Participant_Id', 'Company_FilialId', mode='before')
     def validate_positive_data(cls, value, info):
@@ -113,9 +114,19 @@ class Consumer_validation(BaseModel):
             if not values.get(field):
                 raise ConsumerValidationError(f"The field {field} is mandatory and cannot be empty.")
         return values
-
+    
     @field_validator('Participant_Type', mode='before')
-    def validate_ptcpt_type(cls, value: int):
-        if value not in [2, 6]:
-            raise ConsumerValidationError(f"Invalid value {value} for Participant_Type. Must be 2 or 6.")
-        return value
+    def validate_ptcpt_type(cls, value: str) -> int:
+        try:
+            int_value = int(value)
+        except ValueError:
+            raise ConsumerValidationError("Participant_Type must be a valid integer.")
+        
+        # Ensure the integer value is either 2 or 6
+        if int_value not in [2, 6]:
+            raise ConsumerValidationError(f"Invalid value {int_value} for Participant_Type. Must be 2 or 6.")
+        
+        return int_value
+    
+    
+    

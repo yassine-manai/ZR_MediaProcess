@@ -3,11 +3,11 @@ from tkinter import messagebox
 from api.api_media import get_company_version
 
 
-def test_zr_connection(zr_data):
+def test_zr_connection():
     logger.info("Checking ZR connection")
     
     try:
-        status_code, version = get_company_version(zr_data)
+        status_code, version = get_company_version()
         
         if status_code != 404:
             logger.success("Connection established")

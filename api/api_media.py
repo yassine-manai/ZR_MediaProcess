@@ -57,7 +57,7 @@ def Update_company(company_id: int, data: str) -> Tuple[int, dict]:
 
 
 
-# GET VERSION
+# ZR GET VERSION
 @handle_api_error
-def get_company_version(zr_data) -> Tuple[int, dict]:
+def get_company_version() -> Tuple[int, dict]:
     return make_request("GET", f"{url_api}/version")
