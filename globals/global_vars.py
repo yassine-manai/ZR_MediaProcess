@@ -24,12 +24,24 @@ token_data: dict = {
 
 
 glob_vals : dict  = {
-    'season_parker':"1",
-    'pmvc':"2",
+    'season_parker':"3",
+    'pmvc':"100",
     'cmp':"3",
     'date_format_val':"%d-%m-%Y"
 }
 
+
+configuration_data  : dict = {
+    'computer_id': 7077,
+    'device_id': 799,
+    'cashier_contract_id': 1,
+    'cashier_consumer_id': 13,
+        
+    'zr_ip': "127.0.0.1",
+    'zr_port': 8000,
+    'username': 6,
+    'password': 4711
+}
 
 
 

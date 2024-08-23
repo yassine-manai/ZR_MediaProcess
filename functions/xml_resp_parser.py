@@ -34,32 +34,34 @@ def company_reponse_parser(response):
 # PARTICIPANT CREATE REPONSE PARSER 
 def participant_response_parser(response):
     # Check if the response has a status code 200 and content type is XML
-    if response['status_code'] == 200 and 'Content-Type' in response['headers'] and 'xml' in response['headers']['Content-Type']:
+    if response['status_code'] == 200 and 'xml' in response['headers']['Content-Type']:
         # Parse the XML content
         root = ET.fromstring(response['content'])
-        
+
         namespace = {'ns': 'http://gsph.sub.com/cust/types'}
         
-        # Extract the consumer element
+        # Extract the required data from the consumer element
         consumer = root.find('ns:consumer', namespace)
-        if consumer is None:
-            return None
-        
-        # Extract fields with fallback to None if the element is not present
-        ptcpt_id = consumer.find('ns:id', namespace).text if consumer.find('ns:id', namespace) is not None else None
-        contractid = consumer.find('ns:contractid', namespace).text if consumer.find('ns:contractid', namespace) is not None else None
-        xValidFrom = consumer.find('ns:xValidFrom', namespace).text if consumer.find('ns:xValidFrom', namespace) is not None else None
-        xValidUntil = consumer.find('ns:xValidUntil', namespace).text if consumer.find('ns:xValidUntil', namespace) is not None else None
-        filialId = consumer.find('ns:filialId', namespace).text if consumer.find('ns:filialId', namespace) is not None else None
-        
-        # Optional fields
-        name = consumer.find('ns:name', namespace).text if consumer.find('ns:name', namespace) is not None else None
-        surname = consumer.find('ns:surname', namespace).text if consumer.find('ns:surname', namespace) is not None else None
-        
-        # Return the data as a tuple
-        return (ptcpt_id, contractid, name, surname, xValidFrom, xValidUntil, filialId)
+        if consumer is not None:
+            ptcpt_id = consumer.find('ns:id', namespace).text
+            contractid = consumer.find('ns:contractid', namespace).text
+            xValidFrom = consumer.find('ns:xValidFrom', namespace).text
+            xValidUntil = consumer.find('ns:xValidUntil', namespace).text
+            filialId = consumer.find('ns:filialId', namespace).text
+
+        person = root.find('ns:consumer', namespace)
+        if person is not None:
+            name = person.find('ns:firstName', namespace).text
+            surname = person.find('ns:surname', namespace).text  
+            
+            # Return the data as a tuple
+            return (ptcpt_id, contractid, name, surname, xValidFrom, xValidUntil, filialId)
+        else:
+            raise ValueError("Consumer element not found in the XML content.")
+            pass
     else:
-        return None
+        raise ValueError("Invalid response format or status code.")
+    
     
     
 

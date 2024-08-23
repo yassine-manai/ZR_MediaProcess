@@ -20,14 +20,14 @@ ctk.set_default_color_theme("blue")
 mandatory_columns = [
     "Company_id", "Company_Name", "Company_ValidUntil", "Participant_Id",
     "Participant_Firstname", "Participant_Surname",
-    "Participant_CardNumber", "Participant_LPN1"
+    "Participant_CardNumber","Participant_ValidUntil","Participant_ValidFrom", "Participant_LPN1"
 ]
 optional_columns = [
     "Company_ValidFrom", "Company_Surname", "Company_phone1", "Company_email1", "Company_Street", "Company_Town",
     "Company_Postbox","Company_FilialId", "Participant_FilialId", "Participant_Type",
-    "Participant_Cardclass", "Participant_IdentificationType", "Participant_ValidFrom", "Participant_ValidUntil",
+    "Participant_Cardclass", "Participant_IdentificationType",
     "Participant_Present", "Participant_Status", "Participant_GrpNo",
-    "Participant_DisplayText", "Participant_LPN2", "Participant_LPN3", "Money_Balance"
+    "Participant_DisplayText", "Participant_LPN2", "Participant_LPN3", "Amount"
 ]
 
 date_format_dict = {
@@ -64,6 +64,13 @@ class CSVLoaderApp(ctk.CTk):
         self.main_frame = ctk.CTkFrame(self)
         self.main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
         self.main_frame.grid_columnconfigure(0, weight=1)
+        
+        self.cmp_label = ctk.CTkLabel(self, text="Proudly devloped by AsteroIdea © 2024 - V1.0"
+                                ,text_color="white",corner_radius=8)
+        
+        self.cmp_label.grid(row=1, column=0, padx=10, pady=5, sticky="se")
+        
+        
 
         self.create_file_input_frame()
         self.create_mandatory_fields_frame()
@@ -109,13 +116,13 @@ class CSVLoaderApp(ctk.CTk):
 
         # Season Parker ID
         ctk.CTkLabel(file_data_frame, text="Season Parker ID:").grid(row=1, column=1, padx=5, pady=5, sticky="e")
-        self.template1_var = StringVar(value="1")
+        self.template1_var = StringVar(value="2")
         self.template1_entry = ctk.CTkEntry(file_data_frame, textvariable=self.template1_var, width=50)
         self.template1_entry.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
 
         # PMVC ID
         ctk.CTkLabel(file_data_frame, text="PMVC ID:").grid(row=1, column=3, padx=5, pady=5, sticky="e")
-        self.template2_var = StringVar(value="2")
+        self.template2_var = StringVar(value="100")
         self.template2_entry = ctk.CTkEntry(file_data_frame, textvariable=self.template2_var, width=50)
         self.template2_entry.grid(row=1, column=4, padx=5, pady=5, sticky="ew")
 
@@ -137,7 +144,6 @@ class CSVLoaderApp(ctk.CTk):
 
 
         # global variable values
-        #self.update_global_values()
 
     def update_date_format(self, selected_format):
         global glob_vals
@@ -438,6 +444,9 @@ class CSVLoaderApp(ctk.CTk):
         logger.debug(mymappingdict)
         
         
+        print("\n --------------------- UPDATE GLOBAL VALS -------------------- ")
+        self.update_global_values()
+        
         
         print("\n --------------------- GET DATA FROM SELECT FIELDS -------------------- ")
         data_rows=list()
@@ -512,10 +521,12 @@ class CSVLoaderApp(ctk.CTk):
         logger.info(f"Participant List:{len(mylistp)}")
         
         
-        
 # ----------------------------------------------------------------  PROCESSING DATA COMPANY & SEND REQUESTS ----------------------------------------------------------------------------------------------
+       
         print("\n --------------------------  COMPANY's PROCESSING ---------------------------------------------------- ")
         for rowc in mylistc:
+            print(rowc)
+            
             company_id = rowc.get('Company_id')
             company_name = rowc.get('Company_Name')
 
@@ -548,136 +559,177 @@ class CSVLoaderApp(ctk.CTk):
                     logger.error(f"Error creating Company {company_id}: {e}")
         print("--------------------------------------------------------------------------------------------------------------- ")
 
+# ----------------------------------------------------------------  PROCESSING DATA PTCPT & SEND REQUESTS ----------------------------------------------------------------------------------------------
+        specific_field_names = ["Amount", "Participant_Type"]
+        missing_fields = [field for field in specific_field_names if not any(f[0] == field for f in self.optional_fields)]
+        ptcpt_type_field = 'Participant_Type' if not any(field[0] == 'Participant_Type' for field in self.optional_fields) else None
         
-        specific_field_names = ["Money_Balance", "Participant_Type"]
+        for rowp in mylistp:
 
-        if self.pmvc_var.get() == False:
-            logger.info("Topup PMVC not selected")
-            logger.debug(self.pmvc_var.get())
+            if ptcpt_type_field:
             
-            print("\n --------------------------  PARTICPANT's PROCESSING ---------------------------------------------------- ")
-            for rowp in mylistp:
+                print("\n --------------------------  PARTICIPANT's PROCESSING ---------------------------------------------------- ")
                 participant_id = rowp.get('Participant_Id')
                 company_id = rowp.get('Company_id')
-                company_id = rowp.get('Company_id')
-
+                
+                
                 status_code, participant_details = get_participant(company_id, participant_id)
 
-                #participant found 
+                # Participant found 
                 if status_code != 404:
                     logger.info(f"Participant ID {participant_id} found for Company ID {company_id}")
-                                            
-        
-                    ptcpt_id, _, name, surname, _, _,_ = participant_response_parser(participant_details)
-                    logger.debug(f"id: {id}")
-                    logger.debug(f"name: {name}")
 
-                # participant not found   
+                # Participant not found   
                 if status_code == 404:
-                    logger.info(f"Participant ID {participant_id} not found for Company ID {company_id}. Creating new participant . . .")
+                    logger.info(f"******** Participant ID {participant_id} not found for Company ID {company_id}. ******** Creating new participant . . .")
 
-                    ptcpt_type = rowp.get('Participant_Type', 3)
-                    if ptcpt_type == 2:
-                        template_id = template_ids["season_parker"]
-                    if ptcpt_type == 6:
-                        template_id = template_ids["pmvc"]
-                    if ptcpt_type == 6:
-                        template_id = template_ids["cmp"]
+                    template_id = template_ids["season_parker"]
+
                         
-                        
-                    xml_ptcpt_data = consumer_to_xml(rowp)     
+                    print(rowp)
+                    xml_ptcpt_data = consumer_to_xml(rowp)
                     logger.debug(xml_ptcpt_data)                
-                    status_code, result = create_participant(company_id, 3, xml_ptcpt_data)
-                                                
+                    status_code, result = create_participant(company_id, template_id, xml_ptcpt_data)
+                                                    
                     logger.info(f"Status code: {status_code}")
                     logger.debug(f"Status code: {status_code}")
                     logger.debug(result)
                     print("\n")
                     
-                    
                     if status_code == 201:
                         logger.info(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
                         
-                        
-                        
                     if status_code == 500:
                         logger.error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
-            print ("--------------------------------------------------------------------------------------------------------------- ")
             
-        if self.pmvc_var.get() == True:
-            logger.info("Topup PMVC selected")
-            logger.debug(self.pmvc_var.get())
-            
-            
-            missing_fields = [field for field in specific_field_names if not any(f[0] == field for f in self.optional_fields)]
+                    print("--------------------------------------------------------------------------------------------------------------- ")
 
-            if missing_fields:
-                missing_fields_str = ', '.join(missing_fields)
-                messagebox.showwarning("Warning", f"The field(s) '{missing_fields_str}' have not been added. \n Please add them or uncheck the PMVC CheckBox.")
-                return
-            
-            else:
-                curr_status_code, curr_shift_deatil = get_current_shift_api(1)
-                print(curr_shift_deatil)
-                print(type(curr_shift_deatil))
-                
-                stat = get_status_code(curr_shift_deatil)
-                #input()
-                
-                # -------------------------------------- if shift exist ----------------------------------------------------------
-                if stat == 200: 
-                    # Get Shift deatail 
-                    shift_status, shift_id, shift_no = current_shift_response(curr_shift_deatil)
-                    logger.info(f"SHIFT Status : {shift_status} -- SHIFT ID :{shift_id} -- SHIFT NB :{shift_no}")
-                    logger.info(f"SHIFT ID :{shift_id} already Opened ")
-                    logger.debug(curr_shift_deatil)
 
-                    print("\n --------------------------  PARTICPANT's PROCESSING ---------------------------------------------------- ")
-                    for rowp in mylistp:
+        
+        if missing_fields:
+            missing_fields_str = ', '.join(missing_fields)
+            messagebox.showwarning("Warning", f"The field(s) '{missing_fields_str}' have not been added. \nPlease add them or uncheck the PMVC CheckBox.")
+            return
+        
+        else:
+            print("\n\n")
+            print("------------------ CURRENT SHIFT --------------------------------------------------------------------------------- ")
+            print("\n\n")
+
+            curr_status_code, curr_shift_detail = get_current_shift_api(1)
+            print(curr_shift_detail)
+            print(type(curr_shift_detail))
+            
+            stat = get_status_code(curr_shift_detail)
+
+            # If shift exists
+            if stat == 200 or stat ==201:
+                # Get Shift detail 
+                shift_status, shift_id, shift_no = current_shift_response(curr_shift_detail)
+                logger.info(f"SHIFT Status: {shift_status} -- SHIFT ID: {shift_id} -- SHIFT NO: {shift_no}")
+                logger.info(f"SHIFT ID: {shift_id} already Opened")
+                logger.debug(curr_shift_detail)
+
+                print("\n --------------------------  PARTICIPANT's PROCESSING ---------------------------------------------------- ")
+                for rowp in mylistp:
+                    
+                    print(rowp)
+                    
+                    participant_id = rowp.get('Participant_Id')
+                    company_id = rowp.get('Company_id')
+                    money_balance = rowp.get('Amount', 1)
+                    
+                    input()
+
+                    status_code, participant_details = get_participant(company_id, participant_id)
+
+                    # Participant found 
+                    if status_code != 404:
+                        logger.info(f"Participant ID {participant_id} found for Company ID {company_id}")
                         
-                        #print(rowp)
+                        ptcpt_type = rowp.get('Participant_Type')
+                        if ptcpt_type == 2:
+                            template_id = template_ids["season_parker"]
+                        elif ptcpt_type == 6:
+                            template_id = template_ids["pmvc"]
+                        elif ptcpt_type == 3:
+                            template_id = template_ids["cmp"]
+                                
+                        print(participant_details)
+                        print(company_id)                            
+                        print(participant_id)
+                        print(money_balance)
                         
-                        participant_id = rowp.get('Participant_Id')
-                        company_id = rowp.get('Company_id')
-                        money_balance = rowp.get('Money_Balance')
+                        input()
 
-                        status_code, participant_details = get_participant(company_id, participant_id)
-
-                        #participant found 
-                        if status_code != 404:
-                            logger.info(f"Participant ID {participant_id} found for Company ID {company_id}")
-                            
-                            ptcpt_type = rowp.get('Participant_Type')
-                            if ptcpt_type == 2:
-                                template_id = template_ids["season_parker"]
-                            if ptcpt_type == 6:
-                                template_id = template_ids["pmvc"]
-                            if ptcpt_type == 6:
-                                template_id = template_ids["cmp"]
-                                      
-                            print(participant_details)
-                            input()
+                        data = {
+                            "articles": [
+                                {
+                                    "artClassRef": 0,
+                                    "articleRef": 10624,
+                                    "quantity": 1,
+                                    "quantityExp": 0,
+                                    "amount": 0,
+                                    "influenceRevenue": 1,
+                                    "influenceCashFlow": 1,
+                                    "personalizedMoneyValueCard": {
+                                        "ContractId": company_id,
+                                        "ConsumerId": participant_id,
+                                        "addMoneyValue": int(money_balance)
+                                    }
+                                }
+                            ]
+                        }
                         
+                        if ptcpt_type == 6:
+                            print(f"------------------------------------ TOPUP for USER #{participant_id} -- Company {company_id}#------------------------------------------ ")
                             
-                            print(company_id)                            
-                            print(participant_id)
-                            print(money_balance)
+                            # Topup PMVC
+                            print(data)
+                            data_topup_xml = topup_pmvc_xml(shift_id, data)
+                            print(data_topup_xml)
+                            status_code_tp, shift_detail = topup_pmvc_api(shift_id, data_topup_xml)
                             
-                            input()
+                            if status_code_tp == 200:
+                                logger.success("TOPUP successfully")
+                                logger.info("TOPUP successfully")
+                                logger.debug(shift_detail)
+                            
+                            if status_code_tp != 201:
+                                logger.error("ERROR !!!")
+                                logger.debug(shift_detail)
+                                
+                    # Participant not found   
+                    if status_code == 404:
+                        logger.info(f"Participant ID {participant_id} not found for Company ID {company_id}. Creating new participant . . .")
+
+                        ptcpt_type = rowp.get('Participant_Type')
+                        if ptcpt_type == 2:
+                            template_id = template_ids["season_parker"]
+                        elif ptcpt_type == 6:
+                            template_id = template_ids["pmvc"]
+                        elif ptcpt_type == 3:
+                            template_id = template_ids["cmp"]
+                            
+                        print(rowp)
+                        xml_ptcpt_data = consumer_to_xml(rowp)
+                        logger.debug(xml_ptcpt_data)
+                        status_code, result = create_participant(company_id, template_id, xml_ptcpt_data)
+                        
+                        if status_code == 201:
+                            logger.info(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
 
                             data = {
-                                "articles": 
-                                [
+                                "articles": [
                                     {
                                         "artClassRef": 0,
-                                        "articleRef": 10601,
+                                        "articleRef": 10624,
                                         "quantity": 1,
                                         "quantityExp": 0,
-                                        "amount": money_balance,
+                                        "amount": 0,
                                         "influenceRevenue": 1,
                                         "influenceCashFlow": 1,
-                                        "personalizedMoneyValueCard": 
-                                        {
+                                        "personalizedMoneyValueCard": {
                                             "ContractId": company_id,
                                             "ConsumerId": participant_id,
                                             "addMoneyValue": int(money_balance)
@@ -685,268 +737,193 @@ class CSVLoaderApp(ctk.CTk):
                                     }
                                 ]
                             }
-                            
+                        
                             if ptcpt_type == 6:
-                                print (f"------------------------------------ TOPUP for USER #{participant_id}#------------------------------------------ ")
+                                print(f"------------------------------------ TOPUP for USER #{participant_id}#------------------------------------------ ")
                                 
-                                #topup pmvc
+                                # Topup PMVC
                                 data_topup_xml = topup_pmvc_xml(shift_id, data)
-                                print(data_topup_xml)
-                                status_code_tp, shift_deatil = topup_pmvc_api(shift_id, data_topup_xml)
+                                status_code_tp, shift_detail = topup_pmvc_api(shift_id, data_topup_xml)
+                                
+                                if status_code_tp == 201:
+                                    logger.success("TOPUP successfully")
+                                    logger.info("TOPUP successfully")
+                                    logger.debug(shift_detail)
+                                
+                                if status_code_tp != 201:
+                                    logger.error("ERROR !!!")
+                                    logger.debug(shift_detail)
+                                
+                                print("--------------------------------------------------------------------------------------------------------------- ")
+
+                        logger.info(f"Status code: {status_code}")
+                        logger.debug(f"Status code: {status_code}")
+                        logger.debug(result)
+                        print("\n")
+                        
+                        if status_code == 500:
+                            logger.error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
+
+                # Close SHIFT
+                data_close = close_shift_xml(shift_id, shift_status)
+                status_code, shift_detail = close_shift_api(shift_id, data_close)
+
+                if status_code == 200:
+                    logger.info(f"Close Shift for Shift ID {shift_id} successful")
+                    logger.debug(f"Response {status_code} from Shift {shift_detail}")
+                    
+                else:
+                    logger.error(f"Error Occurred while closing Shift ID {shift_id}")
+                    logger.debug(f"Response {status_code} from Shift {shift_detail}")
+            
+            # If shift does not exist
+            if stat != 200 or stat != 201:
+                op_shift = open_shift_xml()
+                status_code, shift_detail = open_shift_api(op_shift)
+                
+                if status_code == 200:
+                    logger.info("Opening Shift successful")
+                    logger.debug(f"Response {status_code} from Shift \n {shift_detail}")
+                    
+                    shift_status, shift_id, shift_no = open_shift_response(shift_detail)
+                    logger.info(f"SHIFT Status: {shift_status} -- SHIFT ID: {shift_id} -- SHIFT NO: {shift_no}")
+
+                    # Topup PMVC
+                    print("\n --------------------------  PARTICIPANT's PROCESSING ---------------------------------------------------- ")
+                    for rowp in mylistp:
+                        print(rowp)
+                        
+                        participant_id = rowp.get('Participant_Id')
+                        company_id = rowp.get('Company_id')
+                        money_balance = rowp.get('Amount', 0)
+                        
+                        status_code, participant_details = get_participant(company_id, participant_id)
+
+                        # Participant found 
+                        if status_code != 404:
+                            logger.info(f"Participant ID {participant_id} found for Company ID {company_id}")
+                                                    
+                            ptcpt_type = rowp.get('Participant_Type')
+                            if ptcpt_type == 2:
+                                template_id = template_ids["season_parker"]
+                            elif ptcpt_type == 6:
+                                template_id = template_ids["pmvc"]
+                            elif ptcpt_type == 3:
+                                template_id = template_ids["cmp"]
+                                        
+                            data = {
+                                "articles": [
+                                    {
+                                        "artClassRef": 0,
+                                        "articleRef": 10624,
+                                        "quantity": 1,
+                                        "quantityExp": 0,
+                                        "amount": 0,
+                                        "influenceRevenue": 1,
+                                        "influenceCashFlow": 1,
+                                        "personalizedMoneyValueCard": {
+                                            "ContractId": company_id,
+                                            "ConsumerId": participant_id,
+                                            "addMoneyValue": int(money_balance)
+                                        }
+                                    }
+                                ]
+                            }
+                        
+                            if ptcpt_type == 6:
+                                print(f"------------------------------------ TOPUP for USER #{participant_id}#------------------------------------------ ")
+                                
+                                # Topup PMVC
+                                data_topup_xml = topup_pmvc_xml(shift_id, data)
+                                status_code_tp, shift_detail = topup_pmvc_api(shift_id, data_topup_xml)
                                 
                                 if status_code_tp == 200:
                                     logger.success("TOPUP successfully")
                                     logger.info("TOPUP successfully")
-                                    logger.debug(shift_deatil)
+                                    logger.debug(shift_detail)
                                 
-                                else:
-                                    logger.error("ERROR !!! ")
-                                    logger.debug(shift_deatil)
-                                    
-                                    
-                        # participant not found   
+                                if status_code_tp != 201:
+                                    logger.error("ERROR !!!")
+                                    logger.debug(shift_detail)
+
+                        # Participant not found   
                         if status_code == 404:
                             logger.info(f"Participant ID {participant_id} not found for Company ID {company_id}. Creating new participant . . .")
 
                             ptcpt_type = rowp.get('Participant_Type')
                             if ptcpt_type == 2:
                                 template_id = template_ids["season_parker"]
-                            if ptcpt_type == 6:
+                            elif ptcpt_type == 6:
                                 template_id = template_ids["pmvc"]
-                            if ptcpt_type == 6:
+                            elif ptcpt_type == 3:
                                 template_id = template_ids["cmp"]
-                                
-                                
-                            xml_ptcpt_data = consumer_to_xml(rowp)     
-                            logger.debug(xml_ptcpt_data)                
-                            status_code, result = create_participant(company_id, 3, xml_ptcpt_data)
+
+                            print(rowp)
                             
-                        
-                        if status_code == 201:
-                            logger.info(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
-
-                            data = {
-                                "articles": 
-                                [
-                                    {
-                                        "artClassRef": 0,
-                                        "articleRef": 10601,
-                                        "quantity": 1,
-                                        "quantityExp": 0,
-                                        "amount": money_balance,
-                                        "influenceRevenue": 1,
-                                        "influenceCashFlow": 1,
-                                        "personalizedMoneyValueCard": 
-                                        {
-                                            "ContractId": company_id,
-                                            "ConsumerId": participant_id,
-                                            "addMoneyValue": int(money_balance)
-                                        }
-                                    }
-                                ]
-                            }
+                            xml_ptcpt_data = consumer_to_xml(rowp)
+                            logger.debug(xml_ptcpt_data)
+                            status_code, result = create_participant(company_id, template_id, xml_ptcpt_data)
                             
-                            if ptcpt_type == 6:
-                                print (f"------------------------------------ TOPUP for USER #{participant_id}#------------------------------------------ ")
-                                
-                                #topup pmvc
-                                data_topup_xml = topup_pmvc_xml(shift_id, data)
-                                status_code_tp, shift_deatil = topup_pmvc_api(shift_id, data_topup_xml)
-                                
-                                if status_code_tp == 200:
-                                    logger.success("TOPUP successfully")
-                                    logger.info("TOPUP successfully")
-                                    logger.debug(shift_deatil)
-                                
-                                else:
-                                    logger.error("ERROR !!! ")
-                                    logger.debug(shift_deatil)
-                                    
-                                print ("--------------------------------------------------------------------------------------------------------------- ")
+                            if status_code == 201:
+                                logger.info(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
 
-                                                        
-                        logger.info(f"Status code: {status_code}")
-                        logger.debug(f"Status code: {status_code}")
-                        logger.debug(result)
-                        print("\n")
-                            
-                            
-                        if status_code == 500:
-                            logger.error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
-
-                            
-                    #Close SHIFT
-                    data_close = close_shift_xml(shift_id, shift_status)
-                    status_code, shift_deatil = close_shift_api(shift_id, data_close)
-
-                    if status_code == 200:
-                        logger.info(f"Close Shift for Shift ID {shift_id} successful")
-                        logger.debug(f"Response {status_code} from Shift {shift_deatil}")
-                        
-                    if status_code != 200:
-                        logger.error(f"Error Occured while closing Shift ID {shift_id}")
-                        logger.debug(f"Response {status_code} Sfrom Shift {shift_deatil}")
-                        
-                        
-                # -------------------------------------- if shift not exist ----------------------------------------------------------
-                if stat == 500:
-                    op_shift = open_shift_xml()
-                    status_code, shift_deatil = open_shift_api(op_shift)
-                    
-                    if status_code == 200:
-                        logger.info(f"Opening Shift  successful")
-                        logger.debug(f"Response {status_code} from Shift \n {shift_deatil}")
-                        
-                        shift_status, shift_id, shift_no = open_shift_response(shift_deatil)
-                        logger.info(f"SHIFT Status : {shift_status} -- SHIFT ID :{shift_id} -- SHIFT NB :{shift_no}")
-
-
-                        #topup pmvc
-                        print("\n --------------------------  PARTICPANT's PROCESSING ---------------------------------------------------- ")
-                        for rowp in mylistp:
-                            participant_id = rowp.get('Participant_Id')
-                            company_id = rowp.get('Company_id')
-                            
-                            status_code, participant_details = get_participant(company_id, participant_id)
-
-                            #participant found 
-                            if status_code != 404:
-                                logger.info(f"Participant ID {participant_id} found for Company ID {company_id}")
-                                                        
-                                ptcpt_type = rowp.get('Participant_Type')
-                                if ptcpt_type == 2:
-                                    template_id = template_ids["season_parker"]
-                                if ptcpt_type == 6:
-                                    template_id = template_ids["pmvc"]
-                                if ptcpt_type == 6:
-                                    template_id = template_ids["cmp"]
-                                    
-                                #ptcpt_id, _, name, surname, _, _,_ = participant_response_parser(participant_details)
-                                #logger.debug(f"id: {id}")
-                                #logger.debug(f"name: {name}")
-                                
                                 data = {
-                                    "articles": 
-                                    [
+                                    "articles": [
                                         {
                                             "artClassRef": 0,
-                                            "articleRef": 10601,
+                                            "articleRef": 10624,
                                             "quantity": 1,
                                             "quantityExp": 0,
-                                            "amount": money_balance,
+                                            "amount": 0,
                                             "influenceRevenue": 1,
                                             "influenceCashFlow": 1,
-                                            "personalizedMoneyValueCard": 
-                                            {
+                                            "personalizedMoneyValueCard": {
                                                 "ContractId": company_id,
                                                 "ConsumerId": participant_id,
-                                            "addMoneyValue": int(money_balance)
+                                                "addMoneyValue": int(money_balance)
                                             }
                                         }
                                     ]
                                 }
-                            
+                        
                                 if ptcpt_type == 6:
-                                    print (f"------------------------------------ TOPUP for USER #{participant_id}#------------------------------------------ ")
+                                    print(f"------------------------------------ TOPUP for USER #{participant_id}#------------------------------------------ ")
                                     
-                                    #topup pmvc
+                                    # Topup PMVC
                                     data_topup_xml = topup_pmvc_xml(shift_id, data)
-                                    status_code_tp, shift_deatil = topup_pmvc_api(shift_id, data_topup_xml)
+                                    status_code_tp, shift_detail = topup_pmvc_api(shift_id, data_topup_xml)
                                     
                                     if status_code_tp == 200:
                                         logger.success("TOPUP successfully")
                                         logger.info("TOPUP successfully")
-                                        logger.debug(shift_deatil)
+                                        logger.debug(shift_detail)
                                     
-                                    else:
-                                        logger.error("ERROR !!! ")
-                                        logger.debug(shift_deatil)
-                                                                                     
+                                    if status_code_tp != 201:
+                                        logger.error("ERROR !!!")
+                                        logger.debug(shift_detail)
+                                        
+                                        print("--------------------------------------------------------------------------------------------------------------- ")
 
-                            # participant not found   
-                            if status_code == 404:
-                                logger.info(f"Participant ID {participant_id} not found for Company ID {company_id}. Creating new participant . . .")
-
-                                ptcpt_type = rowp.get('Participant_Type', 3)
-                                if ptcpt_type == 2:
-                                    template_id = template_ids["season_parker"]
-                                if ptcpt_type == 6:
-                                    template_id = template_ids["pmvc"]
-                                if ptcpt_type == 3:
-                                    template_id = template_ids["cmp"]
-                                    
-                                    
-                                xml_ptcpt_data = consumer_to_xml(rowp)     
-                                logger.debug(xml_ptcpt_data)                
-                                status_code, result = create_participant(company_id, 3, xml_ptcpt_data)
-                                                            
-                                logger.info(f"Status code: {status_code}")
-                                logger.debug(f"Status code: {status_code}")
-                                logger.debug(result)
-                                print("\n")
-                                
+                            logger.info(f"Status code: {status_code}")
+                            logger.debug(f"Status code: {status_code}")
+                            logger.debug(result)
+                            print("\n")
                             
-                                
-                                if status_code == 201:
-                                    logger.info(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
-                                    
-                                    data = {
-                                        "articles": 
-                                        [
-                                            {
-                                                "artClassRef": 0,
-                                                "articleRef": 10601,
-                                                "quantity": 1,
-                                                "quantityExp": 0,
-                                                "amount": money_balance,
-                                                "influenceRevenue": 1,
-                                                "influenceCashFlow": 1,
-                                                "personalizedMoneyValueCard": 
-                                                {
-                                                    "ContractId": company_id,
-                                                    "ConsumerId": participant_id,
-                                                    "addMoneyValue": int(money_balance)
-                                                }
-                                            }
-                                        ]
-                                    }
-                                
-                                    if ptcpt_type == 6:
-                                        print (f"------------------------------------ TOPUP for USER #{participant_id}#------------------------------------------ ")
-                                        
-                                        #topup pmvc
-                                        data_topup_xml = topup_pmvc_xml(shift_id, data)
-                                        status_code_tp, shift_deatil = topup_pmvc_api(shift_id, data_topup_xml)
-                                        
-                                        if status_code_tp == 200:
-                                            logger.success("TOPUP successfully")
-                                            logger.info("TOPUP successfully")
-                                            logger.debug(shift_deatil)
-                                        
-                                        else:
-                                            logger.error("ERROR !!! ")
-                                            logger.debug(shift_deatil)
-                                            
-                                        if status_code == 500:
-                                            logger.error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
+                            if status_code == 500:
+                                logger.error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
 
+                    # Close SHIFT
+                    data_close = close_shift_xml(shift_id, shift_status)
+                    status_code, shift_detail = close_shift_api(shift_id, data_close)
 
+                    if status_code == 200:
+                        logger.info(f"Close Shift for Shift ID {shift_id} successful")
+                        logger.debug(f"Response {status_code} from Shift {shift_detail}")
                         
-                        # Close shift
-                        data_close_shift = close_shift_xml(shift_id, 2)
-                        status_code, shift_deatil = close_shift_api(shift_id, data_close_shift)
+                    else:
+                        logger.error(f"Error Occurred while closing Shift ID {shift_id}")
+                        logger.debug(f"Response {status_code} from Shift {shift_detail}")
 
-                        if status_code == 200:
-                            logger.info(f"Close Shift for Shift ID {shift_id} successful")
-                            logger.debug(f"Response {status_code} from Shift {shift_deatil}")
-                            
-                        if status_code != 200:
-                            logger.error(f"Error Occured while closing Shift ID {shift_id}")
-                            logger.debug(f"Response {status_code} Sfrom Shift {shift_deatil}")
-                
-                        
-                        
-                    if status_code != 200:
-                        logger.error(f"Error Occured while opening Shift ID ")
-                        logger.debug(f"Response {status_code} Sfrom Shift {shift_deatil}")
-                   
+                else:
+                    logger.error(f"Error Occurred while Opening Shift")
+                    logger.debug(f"Response {status_code} from Shift {shift_detail}")

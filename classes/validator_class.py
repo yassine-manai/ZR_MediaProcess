@@ -81,7 +81,7 @@ class Consumer_validation(BaseModel):
     Participant_DisplayText: Optional[str] = ''
     Participant_LPN2: Optional[str] = ''   
     Participant_LPN3: Optional[str] = ''
-    Money_Balance: Optional[str] = ''
+    Amount: Optional[str] = ''
 
     @field_validator('Participant_Id', 'Company_FilialId', mode='before')
     def validate_positive_data(cls, value, info):
@@ -109,7 +109,7 @@ class Consumer_validation(BaseModel):
 
     @model_validator(mode='before')
     def check_mandatory_fields(cls, values):
-        mandatory_fields = ['Participant_Id', 'Participant_Firstname', 'Participant_Surname', 'Participant_CardNumber', 'Participant_LPN1', 'Company_id']
+        mandatory_fields = ['Participant_Id','Participant_ValidUntil','Participant_ValidFrom', 'Participant_Firstname', 'Participant_Surname', 'Participant_CardNumber', 'Participant_LPN1', 'Company_id']
         for field in mandatory_fields:
             if not values.get(field):
                 raise ConsumerValidationError(f"The field {field} is mandatory and cannot be empty.")

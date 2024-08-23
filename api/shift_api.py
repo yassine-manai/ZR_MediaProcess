@@ -8,6 +8,7 @@ from globals.global_vars import zr_data
 
 #https://193.95.82.173:8709/CustomerMediaWebService/contracts
 ip_fix = "193.95.82.173:8709"
+#ip_fix = "192.168.1.200:8443"
 
 
 ip_url = zr_data.get("zr_ip")
@@ -36,8 +37,8 @@ def get_current_shift_api(shft_status: int) -> Tuple[int, dict]:
 #CLOSE SHIFT
 @handle_api_error
 def close_shift_api(shift_id: int, data: str) -> Tuple[int, dict]:
-    logger.debug(f"GET OPEN SHIFT ....")
-    return make_request("GET", f"{url_api_shift}/shifts/{shift_id}", data=data)
+    logger.debug(f"Closing SHIFT ....")
+    return make_request("PUT", f"{url_api_shift}/shifts/{shift_id}", data=data)
 
 
 
