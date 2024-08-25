@@ -1,64 +1,57 @@
 from typing import Tuple
+from config.config import ZR_IP, ZR_PORT
 from functions.check_error import handle_api_error
 from functions.request_api import make_request
 from config.log_config import logger
-from globals.global_vars import zr_data
+from globals.global_vars import configuration_data
 
 
-#https://193.95.82.173:8709/CustomerMediaWebService/contracts
-ip_fix = "193.95.82.173:8709"
-#ip_fix = "192.168.1.200:8443"
+class APIClient:
+    def __init__(self):
+        global configuration_data
 
+        # Use configuration data or fallback to defaults
+        self.ip_url = configuration_data.get("zr_ip", ZR_IP)
+        self.port = configuration_data.get("zr_port", ZR_PORT)
+        self.username = configuration_data.get("zr_username", "default_user")
+        self.password = configuration_data.get("zr_password", "default_password")
+        self.url = f"{self.ip_url}:{self.port}"
+        self.protocol = "https"
+        self.url_api = f"{self.protocol}://{self.url}/PaymentWebService"
 
-ip_url = zr_data.get("zr_ip")
-port = zr_data.get("zr_port")
-username = zr_data.get("username")
-password = zr_data.get("password")
+    # Company Section
+    @handle_api_error
+    def get_company_details(self, company_id: int) -> Tuple[int, dict]:
+        return make_request("GET", f"{self.url_api}/contracts/{company_id}/detail")
 
+    @handle_api_error
+    def create_company(self, data: str) -> Tuple[int, dict]:
+        logger.debug(f"Creating company with data: {data}")
+        return make_request("POST", f"{self.url_api}/contracts", data=data)
 
-url_api = f"https://{ip_fix}/CustomerMediaWebService"
-#logger.debug(url_api)
+    # Participant Section
+    @handle_api_error
+    def create_participant(self, company_id: int, template_id: int, data: str) -> Tuple[int, dict]:
+        logger.debug(f"Creating participant for company ID {company_id} with template ID {template_id}")
+        return make_request("POST", f"{self.url_api}/contracts/{company_id}/consumers?templateId={template_id}", data=data)
 
-# Company Section
-@handle_api_error
-def get_company_details(company_id: int) -> Tuple[int, dict]:
-    return make_request("GET", f"{url_api}/contracts/{company_id}/detail")
+    @handle_api_error
+    def get_participant(self, company_id: int, participant_id: int) -> Tuple[int, dict]:
+        return make_request("GET", f"{self.url_api}/consumers/{company_id},{participant_id}")
 
-@handle_api_error
-def create_company(data: str) -> Tuple[int, dict]:
-    logger.debug(f"Creating company with data: {data}")
-    return make_request("POST", f"{url_api}/contracts", data=data)
+    # PUT Methods
+    @handle_api_error
+    def update_participant(self, company_id: int, participant_id: int, data: str) -> Tuple[int, dict]:
+        logger.debug(f"Updating participant for company ID {company_id} with data: {data}")
+        return make_request("PUT", f"{self.url_api}/consumers/{company_id},{participant_id}/detail", data=data)
 
+    @handle_api_error
+    def update_company(self, company_id: int, data: str) -> Tuple[int, dict]:
+        logger.debug(f"Updating company {company_id} with data: {data}")
+        return make_request("PUT", f"{self.url_api}/contracts/{company_id}/detail", data=data)
 
-
-# Participant Part
-@handle_api_error
-def create_participant(company_id: int, template_id: int, data: str) -> Tuple[int, dict]:
-    logger.debug(f"Creating participant for company ID {company_id} with template ID {template_id}")
-    return make_request("POST", f"{url_api}/contracts/{company_id}/consumers?templateId={template_id}", data=data)
-
-@handle_api_error
-def get_participant(company_id: int, participant_id: int) -> Tuple[int, dict]:
-    return make_request("GET", f"{url_api}/consumers/{company_id},{participant_id}")
-
-
-
-# PUT METHs 
-@handle_api_error
-def Update_participant(company_id: int, participant_id: int, data: str) -> Tuple[int, dict]:
-    logger.debug(f"Upddating participant for company ID {company_id}  -- to {data}")
-    return make_request("PUT", f"{url_api}/consumers/{company_id},{participant_id}/detail", data=data)
-
-
-@handle_api_error
-def Update_company(company_id: int, data: str) -> Tuple[int, dict]:
-    logger.debug(f"Upddating company {company_id}  ------ to {data}")
-    return make_request("PUT", f"{url_api}/contracts/{company_id}/detail", data=data)
-
-
-
-
-# ZR GET VERSION
-@handle_api_error
-def get_company_version() -> Tuple[int, dict]:
-    return make_request("GET", f"{url_api}/version")
+    # ZR GET VERSION
+    @handle_api_error
+    def get_company_version(self) -> Tuple[int, dict]:
+        logger.debug(f"Retrieving company version from {self.url_api}")
+        return make_request("GET", f"{self.url_api}/version")

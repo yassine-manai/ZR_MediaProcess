@@ -197,5 +197,5 @@ data = {
 }
 
 
-xml_consumer = consumer_to_xml(data_consumer)
-print(xml_consumer)
+#xml_consumer = consumer_to_xml(data_consumer)
+#print(xml_consumer)

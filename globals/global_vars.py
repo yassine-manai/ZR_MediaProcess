@@ -32,16 +32,16 @@ glob_vals : dict  = {
 
 
 configuration_data  : dict = {
-    'computer_id': 7077,
-    'device_id': 799,
-    'cashier_contract_id': 1,
-    'cashier_consumer_id': 13,
-        
-    'zr_ip': "127.0.0.1",
-    'zr_port': 8000,
-    'username': 6,
-    'password': 4711
-}
+    'computer_id': "0",
+    'device_id': "0",
+    'cashier_contract_id': "0",
+    'cashier_consumer_id': "0",
+    
+    'zr_ip': "0",
+    'zr_port': "0",
+    'username': "0",
+    'password': "0"
+    }
 
 
 

@@ -26,6 +26,7 @@ def make_request(method: str, url: str, **kwargs) -> tuple:
         result = {
             'status_code': response.status_code,
             'headers': dict(response.headers),
+            
             'content': response.text,
             'xml': None
         }

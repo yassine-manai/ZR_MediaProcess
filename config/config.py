@@ -17,6 +17,9 @@ FILE_SIZE= config.getint('DEBUG', 'FILE_SIZE', fallback=50)
 # APP CONFIGURATION
 ZR_IP = config.get('APP', 'ZR_IP', fallback='127.0.0.1')
 ZR_PORT =  config.getint('APP', 'ZR_PORT', fallback=8000)
+ZR_USERNAME = config.getint('APP', 'ZR_USERNAME', fallback=6)
+ZR_PASSWORD =  config.getint('APP', 'ZR_PASSWORD', fallback=4711)
+
 TEMPLATE_ID = config.getint('APP', 'TIMOUT', fallback=5)
 TIMOUT =  config.getint('APP', 'TIMOUT', fallback=5)
 

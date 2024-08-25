@@ -1,11 +1,13 @@
 from app.main_window import CSVLoaderApp
+from app.version import Version2
+
 
 def main():
-    app1 = CSVLoaderApp()
-    app1.mainloop()
+    app= Version2()
+    app.mainloop()
 
 
-
+    
 
 if __name__ == "__main__":
     main()

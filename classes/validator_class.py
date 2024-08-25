@@ -65,7 +65,6 @@ class Consumer_validation(BaseModel):
     Participant_Firstname: str
     Participant_Surname: str
     Participant_CardNumber: str
-    Participant_LPN1: str
     Company_id: int
     
     # Optional fields
@@ -79,6 +78,7 @@ class Consumer_validation(BaseModel):
     Participant_GrpNo: Optional[int] = None   
     Participant_Present: Optional[str] = ''
     Participant_DisplayText: Optional[str] = ''
+    Participant_LPN1: Optional[str] = ''   
     Participant_LPN2: Optional[str] = ''   
     Participant_LPN3: Optional[str] = ''
     Amount: Optional[str] = ''
@@ -109,7 +109,7 @@ class Consumer_validation(BaseModel):
 
     @model_validator(mode='before')
     def check_mandatory_fields(cls, values):
-        mandatory_fields = ['Participant_Id','Participant_ValidUntil','Participant_ValidFrom', 'Participant_Firstname', 'Participant_Surname', 'Participant_CardNumber', 'Participant_LPN1', 'Company_id']
+        mandatory_fields = ['Participant_Id','Participant_ValidUntil','Participant_ValidFrom', 'Participant_Firstname', 'Participant_Surname', 'Participant_CardNumber', 'Company_id']
         for field in mandatory_fields:
             if not values.get(field):
                 raise ConsumerValidationError(f"The field {field} is mandatory and cannot be empty.")
@@ -127,6 +127,20 @@ class Consumer_validation(BaseModel):
             raise ConsumerValidationError(f"Invalid value {int_value} for Participant_Type. Must be 2 or 6.")
         
         return int_value
+    
+    
+"""     @field_validator('Amount', mode='before')
+    def validate_amount(cls, value: str) -> int:
+        try:
+            int_value = int(value)
+        except ValueError:
+            raise ConsumerValidationError("Participant_Type must be a valid integer.")
+        
+        # Ensure the integer value is either 2 or 6
+        if int_value == 0:
+            raise ConsumerValidationError(f"Invalid value {int_value} for Participant_Type. Must be 2 or 6.")
+        
+        return int_value """
     
     
     
