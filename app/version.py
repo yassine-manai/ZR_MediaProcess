@@ -425,7 +425,7 @@ class Version2(ctk.CTk):
        
         # Create the status icon label
         self.status_label = ctk.CTkLabel(mandatory_frame, text="Loading...", font=("Arial", 18, "bold"))
-        self.status_label.grid(row=0, column=1, padx=10, pady=(10, 10), sticky="e")
+        self.status_label.grid(row=0, column=7, padx=10, pady=(10, 10), sticky="e")
         
         
         self.dropdowns = []
@@ -438,7 +438,6 @@ class Version2(ctk.CTk):
             dropdown.grid(row=row, column=col+1, padx=10, pady=10, sticky="news")
             dropdown.set("- - - - - - - - -")
             self.dropdowns.append((label, dropdown))
-
     
     def on_data_loaded(self, status):
     # Update the status label to show success when data is loaded
@@ -568,15 +567,15 @@ class Version2(ctk.CTk):
         button_frame = ctk.CTkFrame(parent, corner_radius=10, border_width=2)
         button_frame.grid(row=0, column=0, padx=10, pady=(550, 40), sticky="ew")
         button_frame.grid_columnconfigure((0, 1, 2), weight=1)
-
-        # Button 2
-        self.button2 = ctk.CTkButton(button_frame, text="Data validation", command=lambda: self.button_action(2), state="disabled")
-        self.button2.grid(row=0, column=1, padx=5, pady=20)
         
         # Button 1
-        self.button1 = ctk.CTkButton(button_frame, text="Check ZR connection", command=lambda: self.button_action(1))
+        self.button1 = ctk.CTkButton(button_frame, text="Data validation", command=lambda: self.button_action(1))
         self.button1.grid(row=0, column=0, padx=5, pady=20)
 
+        # Button 2
+        self.button2 = ctk.CTkButton(button_frame, text="Check ZR connection", command=lambda: self.button_action(2), state="disabled")
+        self.button2.grid(row=0, column=1, padx=5, pady=20)
+        
         # Button 3
         self.button3 = ctk.CTkButton(button_frame, text="Start Process", command=lambda: self.button_action(3), state="disabled")
         self.button3.grid(row=0, column=2, padx=5, pady=20)
@@ -592,28 +591,13 @@ class Version2(ctk.CTk):
         # Select the correct button and perform specific actions
         if button_number == 1:
             button = self.button1
-            print("\n ------------------------------ TEST CONNECTION TO ZR  ------------------------------ \n")
-            logger.debug(zr_data)
-            zr = test_zr_connection()
-            
-            # Determine the status of the connection
-            if zr == 200:
-                logger.info("Test connection established")
-                self.code_stat = True 
-            elif zr == 404:
-                logger.info("Error: Test connection failed")
-                self.code_stat = False  
-            
-            print("----------------------------------------------------------------------------------------- ")
-
         elif button_number == 2:
             button = self.button2
         else:
             button = self.button3
 
         # Show loading text/icon
-        button.configure(text=f"{button.cget('text').split(' ')[0]} ⏳")
-
+        button.configure(text=f"{button.cget('text')} ⏳")
 
         # Simulate test result
         test_result = self.simulate_test(button_number)
@@ -622,40 +606,57 @@ class Version2(ctk.CTk):
         if test_result == 1:
             button.configure(text="Checking Success ✔️")
             logger.info(f"Button {button_number} action succeeded")
+            
             if button_number == 1:
+                self.button1.configure(state="disabled")
                 self.button2.configure(state="normal")  # Enable button 2 if the test succeeds
+            elif button_number == 2:
+                self.button2.configure(state="disabled")
+                self.button3.configure(state="normal")  # Enable button 3 if ZR connection check succeeds
         else:
             button.configure(text="Error ❌")
             logger.error(f"Button {button_number} action failed")
-
-        # Update button states based on the action taken
-        if button_number == 1:
-            self.button1.configure(state="disabled")
-            # Button 2 is only enabled if the test succeeds (handled above)
-            self.button3.configure(state="disabled")
-        elif button_number == 2:
-            self.button1.configure(state="disabled")
-            self.button2.configure(state="disabled")
-            self.button3.configure(state="normal")
-        else:
-            self.button1.configure(state="normal")
-            self.button2.configure(state="disabled")
-            self.button3.configure(state="disabled")
+            self.reset_button_texts()
+            self.reset_button_states()
 
     def simulate_test(self, button_number):
-        # Return the result based on the test for button 1
+        # Simulate a delay
+        time.sleep(2)
+
         if button_number == 1:
-            return 1 if self.code_stat else 0
+            # Simulate data validation
+            return 1  # Always succeed for this example
         elif button_number == 2:
-            return 1  
+            # Use the actual test_zr_connection function
+            print("\n ------------------------------ TEST CONNECTION TO ZR  ------------------------------ \n")
+            logger.debug(zr_data)
+            zr = test_zr_connection()
+            
+            # Determine the status of the connection
+            if zr == 200:
+                logger.info("Test connection established")
+                self.code_stat = True 
+                return 1
+            elif zr == 404:
+                logger.info("Error: Test connection failed")
+                self.code_stat = False  
+                return 0
+            
+            print("----------------------------------------------------------------------------------------- ")
         else:
             return 0  # Simulate failure for button 3
 
     def reset_button_texts(self):
         # Reset all button texts to their original state
-        self.button1.configure(text="Check ZR connection")
-        self.button2.configure(text="Data validation")
+        self.button1.configure(text="Data validation")
+        self.button2.configure(text="Check ZR connection")
         self.button3.configure(text="Start Process")
+
+    def reset_button_states(self):
+        # Reset all button states to their original state
+        self.button1.configure(state="normal")
+        self.button2.configure(state="disabled")
+        self.button3.configure(state="disabled")
 # -----------------------------------------------------------------------------------------------------------------
         
 
