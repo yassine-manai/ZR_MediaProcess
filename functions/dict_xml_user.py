@@ -76,6 +76,7 @@ def consumer_to_xml(data):
     xml_content += '<cm:consumer>\n'
     xml_content += f'<cm:id>{data.get("Participant_Id", "")}</cm:id>\n'
     xml_content += f'<cm:contractid>{data.get("Company_id", "")}</cm:contractid>\n'
+    
     xml_content += '</cm:consumer>\n'
     
     # Person section

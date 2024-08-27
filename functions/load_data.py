@@ -69,8 +69,6 @@ def read_data_with_header(path, header):
                 reader = csv.DictReader(file, delimiter=delimiter)
                 data = [row for row in reader]
                 
-
-                
             if header == True:
                 reader = csv.reader(file, delimiter=delimiter)
                 headers = next(reader) 
@@ -78,7 +76,6 @@ def read_data_with_header(path, header):
                 custom_headers = [f"colomn{i+1}" for i in range(len(headers))]
                 data = [dict(zip(custom_headers, row)) for row in reader]
                 
-                return custom_headers, data
         
             return data
 

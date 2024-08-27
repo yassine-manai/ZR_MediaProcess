@@ -1,5 +1,6 @@
 from threading import Thread
 import threading
+from time import sleep
 import tkinter as tk
 from tkinter import StringVar, filedialog, messagebox
 import customtkinter as ctk
@@ -17,8 +18,7 @@ from globals.global_vars import zr_data, glob_vals, configuration_data
 from functions.load_data import read_data_with_header
 
 ctk.set_appearance_mode("system")
-ctk.set_default_color_theme("blue")
-        
+ctk.set_default_color_theme("blue")    
 
 class Version2(ctk.CTk):
     
@@ -79,7 +79,8 @@ class Version2(ctk.CTk):
         self.create_title_frame()
         self.create_main_frame()
         self.create_footer_frame()
-        
+
+
 
     def custom_error_dialog(self, title, message):
         dialog = ctk.CTkToplevel()
@@ -127,7 +128,6 @@ class Version2(ctk.CTk):
             dialog.wait_window()
 
             return response
-
 
 
 
@@ -478,7 +478,7 @@ class Version2(ctk.CTk):
 # ------------------------------------- Main Frame - Compns - Data input  -----------------------------
     def create_file_input_frame(self, parent):
         file_data_frame = ctk.CTkFrame(parent, corner_radius=10, border_width=2)
-        file_data_frame.grid(row=0, column=0, padx=10, pady=(10, 20), sticky="new")
+        file_data_frame.grid(row=0, column=0, padx=10, pady=(5, 20), sticky="new")
         file_data_frame.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9), weight=1)
 
         ctk.CTkLabel(file_data_frame, text="CSV file Selection", font=("Arial", 18, "bold")).grid(row=0, column=0, columnspan=10, padx=10, pady=(10, 10), sticky="news")
@@ -587,14 +587,23 @@ class Version2(ctk.CTk):
 
             if header_state:
                 logger.success("Data loaded without headers...")
-                headers, data = result if result else ([], None)
+                data = result
+                headers = result[0].keys() if result else ()
                 
-            if not header_state:
+                print(headers)  
+                print(data)
+                print("****************************************************************")
+                
+            else:
                 logger.success("Data loaded with headers...")
 
                 data = result
                 headers = data[0].keys() if data else []
 
+                print(headers)
+                print(data)
+                print("****************************************************************")
+                
             if not data:
                 self.custom_error_dialog("Warning", "The file appears to be empty.")
                 return
@@ -627,7 +636,7 @@ class Version2(ctk.CTk):
 # ------------------------------------- Main Frame - Compns - madatory fild  --------------------------------
     def create_mandatory_fields_frame(self, parent):
         mandatory_frame = ctk.CTkFrame(parent, corner_radius=10, border_width=2)
-        mandatory_frame.grid(row=0, column=0, padx=10, pady=(200, 40), sticky="new")
+        mandatory_frame.grid(row=0, column=0, padx=10, pady=(190, 40), sticky="new")
         mandatory_frame.grid_columnconfigure((1, 3, 5, 7, 9), weight=1)
 
         ctk.CTkLabel(mandatory_frame, text="Mandatory Fields Selections", font=("Arial", 18, "bold")).grid(row=0, column=0, columnspan=10, padx=10, pady=(10, 10), sticky="news")
@@ -669,7 +678,7 @@ class Version2(ctk.CTk):
 # ------------------------------------- Main Frame - Compns - optional fild  -----------------------------------
     def create_optional_fields_frame(self, parent):
         self.optional_frame = ctk.CTkFrame(parent, corner_radius=10, border_width=2)
-        self.optional_frame.grid(row=0, column=0, padx=10, pady=(410, 40), sticky="new")
+        self.optional_frame.grid(row=0, column=0, padx=10, pady=(390, 40), sticky="new")
         self.optional_frame.grid_columnconfigure((1, 2, 3, 4), weight=1)
 
         ctk.CTkLabel(self.optional_frame, text="Optional Fields Selections", font=("Arial", 18, "bold")).grid(row=0, column=0, columnspan=10, pady=(10,10), sticky="news")
@@ -696,7 +705,7 @@ class Version2(ctk.CTk):
         self.optional_fields_container.grid_columnconfigure(0, weight=1)
         
         # Set an initial height for the container
-        self.optional_fields_container.configure(height=20)  
+        self.optional_fields_container.configure(height=60)  
 
         self.optional_fields = []
 
@@ -770,7 +779,7 @@ class Version2(ctk.CTk):
 # ------------------------------------- Main Frame - Compns - Button process fild  ------------------------------
     def create_button_frame(self, parent):
         button_frame = ctk.CTkFrame(parent, corner_radius=10, border_width=2)
-        button_frame.grid(row=0, column=0, padx=10, pady=(560, 40), sticky="new")
+        button_frame.grid(row=0, column=0, padx=10, pady=(550, 40), sticky="new")
         button_frame.grid_columnconfigure((0, 1, 2), weight=1)
         
         # Timeline Label
@@ -907,6 +916,8 @@ class Version2(ctk.CTk):
                 else:
                     popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
                     template_id = template_ids["season_parker"]
+                    sleep(5)
+
                     xml_ptcpt_data = consumer_to_xml(rowp)
                     status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data.strip())
                     
@@ -925,6 +936,9 @@ class Version2(ctk.CTk):
                     else:
                         popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
                         template_id = template_ids["season_parker"]
+                        
+                        sleep(5)
+
                         xml_ptcpt_data = consumer_to_xml(rowp)
                         status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data)
                         
@@ -936,6 +950,7 @@ class Version2(ctk.CTk):
                 elif Participant_Type == 6:
                     # Process PMVC
                     topup_value = self.pmvc_var.get()
+                    
                     
                     if topup_value:
                         popup.update_status("TOPUP selected")
@@ -954,6 +969,9 @@ class Version2(ctk.CTk):
                             popup.update_status(f"Current shift found. ID: {shift_id}, Number: {shift_no}")
                         else:
                             popup.update_status("No current shift found. Opening new shift...")
+                            
+                            sleep(5)
+
                             op_shift = open_shift_xml()
                             status_code, shift_detail = self.shift_api.open_shift_api(op_shift)
                             if status_code == 200:
@@ -963,7 +981,7 @@ class Version2(ctk.CTk):
                                 popup.update_status("Failed to open new shift")
                                 continue
 
-                        money_balance = rowp.get('Amount', 0)
+                        money_balance = rowp.get('Amount')
                         status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
 
                         if status_code != 404:
@@ -972,39 +990,53 @@ class Version2(ctk.CTk):
                             popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
                             template_id = template_ids["pmvc"]
                             xml_ptcpt_data = consumer_to_xml(rowp)
+                            
+                            sleep(5)
+
                             status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data)
                             
                             if status_code != 201:
                                 popup.update_status(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
                                 continue
+                            
 
-                        popup.update_status(f"Performing TOPUP for Participant ID {participant_id}")
-                        data = {
-                            "articles": [
-                                {
-                                    "artClassRef": 0,
-                                    "articleRef": 10624,
-                                    "quantity": 1,
-                                    "quantityExp": 0,
-                                    "amount": 0,
-                                    "influenceRevenue": 1,
-                                    "influenceCashFlow": 1,
-                                    "personalizedMoneyValueCard": {
-                                        "ContractId": company_id,
-                                        "ConsumerId": participant_id,
-                                        "addMoneyValue": int(money_balance)
+                        if int(money_balance) > 0:
+                            popup.update_status(f"Performing TOPUP for Participant ID {participant_id}")
+                            data = {
+                                "articles": [
+                                    {
+                                        "artClassRef": 0,
+                                        "articleRef": 10624,
+                                        "quantity": 1,
+                                        "quantityExp": 0,
+                                        "amount": 0,
+                                        "influenceRevenue": 1,
+                                        "influenceCashFlow": 1,
+                                        "personalizedMoneyValueCard": {
+                                            "ContractId": company_id,
+                                            "ConsumerId": participant_id,
+                                            "addMoneyValue": int(money_balance)
+                                        }
                                     }
-                                }
-                            ]
-                        }
-                        
-                        data_topup_xml = topup_pmvc_xml(shift_id, data)
-                        status_code_tp, shift_detail = self.shift_api.topup_pmvc_api(shift_id, data_topup_xml)
-                        
-                        if status_code_tp == 200:
-                            popup.update_status("TOPUP completed successfully")
-                        else:
-                            popup.update_status(f"TOPUP failed. Status code: {status_code_tp}")
+                                ]
+                            }
+                            
+                            sleep(5)
+
+                            data_topup_xml = topup_pmvc_xml(shift_id, data)
+                            status_code_tp, shift_detail = self.shift_api.topup_pmvc_api(shift_id, data_topup_xml)
+                            
+                            if status_code_tp == 200 or status_code_tp == 201:
+                                popup.update_status("TOPUP completed successfully")
+                            else:
+                                popup.update_status(f"TOPUP failed. Status code: {status_code_tp}")
+                                continue
+                                
+                        if int(money_balance) == 0:
+                            logger.error("Topup amount is 0 , Skiping transaction")
+                            popup.update_status(f"Topup amount is 0 , Skiping transaction for Participant ID {participant_id}")
+                            continue
+
 
                     else:
                         popup.update_status("TOPUP not selected. Processing PMVC participant without topup.")
@@ -1015,6 +1047,8 @@ class Version2(ctk.CTk):
                         else:
                             popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
                             template_id = template_ids["pmvc"]
+                            sleep(5)
+
                             xml_ptcpt_data = consumer_to_xml(rowp)
                             status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data)
                             
@@ -1023,6 +1057,7 @@ class Version2(ctk.CTk):
                             else:
                                 popup.update_status(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
 
+       
         popup.update_status("Processing completed!")
         popup.enable_ok_button()
 # -----------------------------------------------------------------------------------------------------------------
@@ -1096,16 +1131,19 @@ class Version2(ctk.CTk):
     
     
     
-    
-    
-    
-    
 # ------------------------------- Footer Frame -----------------------------------------
     def create_footer_frame(self):
         footer_frame = ctk.CTkFrame(self, fg_color="transparent")
         footer_frame.grid(row=2, column=0, sticky="ew")
         footer_frame.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(footer_frame, text="Version 2.08.24", text_color="white", corner_radius=8).grid(row=0, column=0, sticky="e")
-        ctk.CTkLabel(footer_frame, text="AsteroIdea © 2024", text_color="white", corner_radius=8).grid(row=0, column=0, sticky="w")    
+        ctk.CTkLabel(footer_frame, text="Version 1.1.0", text_color="white", corner_radius=8).grid(row=0, column=0, sticky="e")
+        ctk.CTkLabel(footer_frame, text="Asteroidea © 2024", text_color="white", corner_radius=8).grid(row=0, column=0, sticky="w")   
+        
+        link_button = ctk.CTkButton(footer_frame, text="Asteroidea © 2024", fg_color="transparent", text_color="white",hover_color=("gray70", "gray30"), border_width=0, cursor="hand2", command=self.open_link)
+        link_button.grid(row=0, column=0, sticky="w") 
+        
+    def open_link(self):
+        import webbrowser
+        webbrowser.open("https://asteroidea.co/")  
 # --------------------------------------------------------------------------------------

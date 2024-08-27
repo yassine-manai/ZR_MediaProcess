@@ -66,10 +66,10 @@ def topup_pmvc_xml(shift_id, data):
     CASHIER_CONTRACT_ID = configuration_data.get("cashier_contract_id")
     CASHIER_CONSUMER_ID = configuration_data.get("cashier_consumer_id")
     
-    
+
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml_content += '<pay:salesTransactionDetail xmlns:pay="http://gsph.sub.com/payment/types">\n'
-    
+    current_datetimen = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
     # Sales Transaction section
     xml_content += '    <pay:salesTransaction>\n'
     sales_transaction_fields = [
@@ -78,7 +78,7 @@ def topup_pmvc_xml(shift_id, data):
         ("pay:deviceId", DEVICE_ID),
         ("pay:cashierContractId", CASHIER_CONTRACT_ID),
         ("pay:cashierConsumerId", CASHIER_CONSUMER_ID),
-        ("pay:salesTransactionDateTime", current_datetime)
+        ("pay:salesTransactionDateTime", current_datetimen)
     ]
     
     for tag, value in sales_transaction_fields:

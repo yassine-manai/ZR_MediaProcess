@@ -80,7 +80,7 @@ class Consumer_validation(BaseModel):
     Participant_LPN1: Optional[str] = ''   
     Participant_LPN2: Optional[str] = ''   
     Participant_LPN3: Optional[str] = ''
-    Amount: Optional[str] = ''
+    Amount: Optional[int] = 0
 
     @field_validator('Participant_Id', 'Company_FilialId', mode='before')
     def validate_positive_data(cls, value, info):

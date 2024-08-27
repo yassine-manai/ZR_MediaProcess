@@ -20,7 +20,7 @@ class ProcessingPopup(ctk.CTkToplevel):
         # Create OK button
         self.ok_button = ctk.CTkButton(self, text="OK", command=self.destroy, font=("Arial", 14), height=40)
         self.ok_button.grid(row=1, column=0, pady=10)
-        self.ok_button.configure(state="disabled")
+        self.ok_button.configure(state="normal")
 
     def update_status(self, message):
         self.text_widget.insert("end", message + "\n")
