@@ -3,21 +3,28 @@ from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestExce
 from Models.model import APIError
 from config.config import TIMOUT
 from config.log_config import logger
-from functions.get_headers import get_headers
 import xml.etree.ElementTree as ET
+from globals.global_vars import configuration_data
 
 timeout=TIMOUT
 
 def make_request(method: str, url: str, **kwargs) -> tuple:
-    headers = get_headers()
+    global configuration_data
+
+
+    username = configuration_data.get("username")
+    password = configuration_data.get("password")
     
-    # Always set Content-Type to XML
-    headers['Content-Type'] = 'application/xml'
+    #print(username, password)
+
+    auth=username, password
+    headers = {'Content-Type': 'application/xml'}
+    #print(auth)
     
-    logger.debug(f"Making {method} request to {url} with headers: {headers}")
+    logger.debug(f"Making {method} request to {url} --- {auth}")
 
     try:
-        response = requests.request(method, url, headers=headers, verify=False, timeout=timeout, **kwargs)
+        response = requests.request(method, url , auth=auth, headers=headers, verify=False, timeout=timeout, **kwargs)
 
         # Log the full response
         logger.debug(f"Received response [{response.status_code}] from {url}")

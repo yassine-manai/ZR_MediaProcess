@@ -69,6 +69,8 @@ def read_data_with_header(path, header):
                 reader = csv.DictReader(file, delimiter=delimiter)
                 data = [row for row in reader]
                 
+
+                
             if header == True:
                 reader = csv.reader(file, delimiter=delimiter)
                 headers = next(reader) 

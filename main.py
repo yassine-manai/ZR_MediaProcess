@@ -1,8 +1,10 @@
-from app.main_window import CSVLoaderApp
+from datetime import datetime
 from app.version import Version2
 
 
+
 def main():
+    
     app= Version2()
     app.mainloop()
 

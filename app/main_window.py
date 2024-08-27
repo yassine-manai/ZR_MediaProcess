@@ -1,4 +1,4 @@
-import customtkinter as ctk
+""" import customtkinter as ctk
 from tkinter import StringVar, filedialog, messagebox
 from api.api_media import APIClient
 from api.shift_api import ShiftPaymentAPIClient
@@ -1035,3 +1035,4 @@ class CSVLoaderApp(ctk.CTk):
         print("\n --------------------- TEST ZR -------------------- ")
         test_zr_connection()        
         
+ """

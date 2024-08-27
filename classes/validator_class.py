@@ -3,7 +3,6 @@ from typing import Optional
 from pydantic import BaseModel, field_validator, model_validator
 from classes.error_except import CompanyValidationError, ConsumerValidationError
 from globals.global_vars import glob_vals
-from dateutil.parser import parse, ParserError
 from config.log_config import logger
 
 

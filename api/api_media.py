@@ -1,5 +1,4 @@
 from typing import Tuple
-from config.config import ZR_IP, ZR_PORT
 from functions.check_error import handle_api_error
 from functions.request_api import make_request
 from config.log_config import logger
@@ -11,13 +10,14 @@ class APIClient:
         global configuration_data
 
         # Use configuration data or fallback to defaults
-        self.ip_url = configuration_data.get("zr_ip", ZR_IP)
-        self.port = configuration_data.get("zr_port", ZR_PORT)
-        self.username = configuration_data.get("zr_username", "default_user")
-        self.password = configuration_data.get("zr_password", "default_password")
+        self.ip_url = configuration_data.get("zr_ip")
+        self.port = configuration_data.get("zr_port")
+        self.username = configuration_data.get("zr_username")
+        self.password = configuration_data.get("zr_password")
         self.url = f"{self.ip_url}:{self.port}"
+        
         self.protocol = "https"
-        self.url_api = f"{self.protocol}://{self.url}/PaymentWebService"
+        self.url_api = f"{self.protocol}://{self.url}/CustomerMediaWebService"
 
     # Company Section
     @handle_api_error
@@ -32,7 +32,7 @@ class APIClient:
     # Participant Section
     @handle_api_error
     def create_participant(self, company_id: int, template_id: int, data: str) -> Tuple[int, dict]:
-        logger.debug(f"Creating participant for company ID {company_id} with template ID {template_id}")
+        logger.debug(f"Creating participant for company ID {company_id} with template ID {template_id} ++++++++ {data}")
         return make_request("POST", f"{self.url_api}/contracts/{company_id}/consumers?templateId={template_id}", data=data)
 
     @handle_api_error

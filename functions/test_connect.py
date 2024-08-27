@@ -19,6 +19,7 @@ def test_zr_connection():
             logger.debug(f"Version Response : {version}")
             logger.debug(f"Status Code Response : {status_code}")            
             messagebox.showinfo("Success", f"ZR Connection Established successfully")
+            
     
         if status_code == 404:
             logger.debug(f"Version Response : {version}")

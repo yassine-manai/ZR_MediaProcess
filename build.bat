@@ -1,0 +1,1 @@
+pyinstaller --noconfirm --onefile --console --name Import_Tool.exe main.py

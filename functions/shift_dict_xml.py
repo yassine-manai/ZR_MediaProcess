@@ -1,9 +1,17 @@
-from config.config import *
 from datetime import datetime
-
+from globals.global_vars import configuration_data
 current_datetime = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
 
 def open_shift_xml():
+        
+    global configuration_data
+    
+    # Use configuration data or fallback to defaults
+    COMPUTER_ID = configuration_data.get("computer_id")
+    DEVICE_ID = configuration_data.get("device_id")
+    CASHIER_CONTRACT_ID = configuration_data.get("cashier_contract_id")
+    CASHIER_CONSUMER_ID = configuration_data.get("cashier_consumer_id")
+
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml_content += '<pay:shift xmlns:pay="http://gsph.sub.com/payment/types">\n'
 
@@ -25,6 +33,14 @@ def open_shift_xml():
     return xml_content
 
 def close_shift_xml(shiftId, shiftStatus):
+    
+    global configuration_data
+    
+    # Use configuration data or fallback to defaults
+    COMPUTER_ID = configuration_data.get("computer_id")
+    DEVICE_ID = configuration_data.get("device_id")
+    CASHIER_CONTRACT_ID = configuration_data.get("cashier_contract_id")
+    CASHIER_CONSUMER_ID = configuration_data.get("cashier_consumer_id")
 
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml_content += '<pay:shift xmlns:pay="http://gsph.sub.com/payment/types">\n'
@@ -41,6 +57,16 @@ def close_shift_xml(shiftId, shiftStatus):
 
 
 def topup_pmvc_xml(shift_id, data):
+    
+    global configuration_data
+    
+    # Use configuration data or fallback to defaults
+    COMPUTER_ID = configuration_data.get("computer_id")
+    DEVICE_ID = configuration_data.get("device_id")
+    CASHIER_CONTRACT_ID = configuration_data.get("cashier_contract_id")
+    CASHIER_CONSUMER_ID = configuration_data.get("cashier_consumer_id")
+    
+    
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml_content += '<pay:salesTransactionDetail xmlns:pay="http://gsph.sub.com/payment/types">\n'
     

@@ -36,7 +36,8 @@ configuration_data  : dict = {
     'device_id': "0",
     'cashier_contract_id': "0",
     'cashier_consumer_id': "0",
-    
+    'shift_id': "0",
+
     'zr_ip': "0",
     'zr_port': "0",
     'username': "0",

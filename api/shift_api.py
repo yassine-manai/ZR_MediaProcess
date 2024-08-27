@@ -1,5 +1,4 @@
 from typing import Tuple
-from config.config import CASHIER_CONSUMER_ID, CASHIER_CONTRACT_ID, COMPUTER_ID, DEVICE_ID, ZR_IP, ZR_PORT
 from functions.check_error import handle_api_error
 from functions.request_api import make_request
 from config.log_config import logger
@@ -11,15 +10,15 @@ class ShiftPaymentAPIClient:
         global configuration_data
 
         # Configuration data or default values
-        self.ip_url = configuration_data.get("zr_ip", ZR_IP)
-        self.port = configuration_data.get("zr_port", ZR_PORT)
-        self.username = configuration_data.get("zr_username", "default_user")
-        self.password = configuration_data.get("zr_password", "default_password")
+        self.ip_url = configuration_data.get("zr_ip")
+        self.port = configuration_data.get("zr_port")
+        self.username = configuration_data.get("zr_username")
+        self.password = configuration_data.get("zr_password")
         
-        self.computer_id = configuration_data.get("computer_id", COMPUTER_ID)
-        self.device_id = configuration_data.get("device_id", DEVICE_ID)
-        self.cashier_contract_id = configuration_data.get("cashier_contract_id", CASHIER_CONTRACT_ID)
-        self.cashier_consumer_id = configuration_data.get("cashier_consumer_id", CASHIER_CONSUMER_ID)
+        self.computer_id = configuration_data.get("computer_id")
+        self.device_id = configuration_data.get("device_id")
+        self.cashier_contract_id = configuration_data.get("cashier_contract_id")
+        self.cashier_consumer_id = configuration_data.get("cashier_consumer_id")
         
         
         self.url = f"{self.ip_url}:{self.port}"
