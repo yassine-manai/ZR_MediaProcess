@@ -156,26 +156,37 @@ class Version2(ctk.CTk):
             hover_color=("gray70", "gray30"),
             command=self.open_configuration
         ).grid(row=0, column=2, sticky="e", padx=(0, 10))
-
-# ------------------------------------- Titile Frame - Compns ----------------------------------------------------
+# ------------------------------------- Titile Frame - Compns ----------------------------------------------------def open_configuration(self):
+    
     def open_configuration(self):
         if hasattr(self, 'config_window') and self.config_window.winfo_exists():
             self.config_window.lift()
             return
 
+                
         logger.info(f"Configuration Popup opened")
 
         self.create_blurred_overlay()
 
+        # Create the configuration window
         self.config_window = ctk.CTkToplevel(self)
         self.config_window.title("Configuration")
-        #self.config_window.geometry(" W x H")
-        self.config_window.geometry("400x480")
+
+        # Get the user's screen size
+        screen_width = self.config_window.winfo_screenwidth()
+        screen_height = self.config_window.winfo_screenheight()
+
+        # Set the window size to 80% of the screen size, for example
+        window_width = int(screen_width * 0.25)
+        window_height = int(screen_height * 0.57)
+
+        # Set the window size and position
+        self.config_window.geometry(f"{window_width}x{window_height}+{int((screen_width - window_width) / 2)}+{int((screen_height - window_height) / 2)}")
         self.config_window.resizable(True, True)
 
-        # Center the config window
+        # Center the config window (might be redundant now)
         self.center_window(self.config_window)
-                
+
         self.create_zr_config()
         self.create_shift_config()
 
@@ -184,19 +195,18 @@ class Version2(ctk.CTk):
 
         ctk.CTkLabel(self.config_window, text="", font=("Arial", 14, "bold")).grid(row=12, column=0, pady=15, sticky="w")
 
-
-        self.save_button = ctk.CTkButton(self.config_window, text="Save" ,fg_color='green', command=self.save_configuration, width=150, state="disabled")
+        self.save_button = ctk.CTkButton(self.config_window, text="Save", fg_color='green', command=self.save_configuration, width=150, state="disabled")
         self.save_button.grid(row=15, column=1, padx=5, pady=10)
-      
-        self.cancel = ctk.CTkButton(self.config_window, text=" Cancel ", fg_color='red', command=self.on_config_close, width=150, state="normal")
+    
+        self.cancel = ctk.CTkButton(self.config_window, text="Cancel", fg_color='red', command=self.on_config_close, width=150, state="normal")
         self.cancel.grid(row=15, column=2, padx=5, pady=10)
-         
+        
         # Make the configuration window modal
         self.config_window.transient(self)
         self.config_window.grab_set()
         self.config_window.protocol("WM_DELETE_WINDOW", self.on_config_close)
         self.wait_window(self.config_window)
-        
+
     def check_connection(self, connection_type):
         button = self.check_zr_button if connection_type == 'zr' else self.check_shift_button
         
@@ -421,9 +431,11 @@ class Version2(ctk.CTk):
                     
                     if shift_detail is not None:
                         try:
-                            new_shift_id = processshift(shift_detail)
+                            _, new_shift_id, _ = current_shift_response(shift_detail)
+                            print(shift_detail)
                             if new_shift_id:
                                 logger.info(f"New shift {new_shift_id} opened.")
+                                self.shift_id_entry.insert(0, new_shift_id)  # Insert the new shift ID
                                 return True
                             else:
                                 logger.error("Failed to get new shift ID")
@@ -431,7 +443,7 @@ class Version2(ctk.CTk):
                                 return False
                         except Exception as e:
                             logger.error(f"Error parsing shift response: {str(e)}" )
-                            messagebox.showerror("Error", "Failed to parse shift response.")
+                            #messagebox.showerror("Error", "Failed to parse shift response.")
                             return False
                     else:
                         logger.error("Shift API returned None for shift_detail")
@@ -635,23 +647,44 @@ class Version2(ctk.CTk):
 
 # ------------------------------------- Main Frame - Compns - madatory fild  --------------------------------
     def create_mandatory_fields_frame(self, parent):
-        mandatory_frame = ctk.CTkFrame(parent, corner_radius=10, border_width=2)
-        mandatory_frame.grid(row=0, column=0, padx=10, pady=(190, 40), sticky="new")
-        mandatory_frame.grid_columnconfigure((1, 3, 5, 7, 9), weight=1)
+        self.mandatory_frame = ctk.CTkFrame(parent, corner_radius=10, border_width=2)
+        self.mandatory_frame.grid(row=0, column=0, padx=10, pady=(190, 40), sticky="new")
+        self.mandatory_frame.grid_columnconfigure((1, 3, 5, 7, 9), weight=1)
 
-        ctk.CTkLabel(mandatory_frame, text="Mandatory Fields Selections", font=("Arial", 18, "bold")).grid(row=0, column=0, columnspan=10, padx=10, pady=(10, 10), sticky="news")
-       
+        ctk.CTkLabel(self.mandatory_frame, text="Mandatory Fields Selections", font=("Arial", 18, "bold")).grid(row=0, column=0, columnspan=10, padx=10, pady=(10, 10), sticky="news")
         
         self.dropdowns = []
-        for i, label in enumerate(self.mandatory_columns):
+        self.update_mandatory_fields()
+
+    def update_mandatory_fields(self):
+        # Clear existing dropdowns
+        for widget in self.mandatory_frame.winfo_children():
+            if isinstance(widget, ctk.CTkOptionMenu):
+                widget.destroy()
+
+        columns = self.mandatory_columns.copy()
+        if self.pmvc_var.get():
+            columns.extend(["Amount", "Participant_Type"])
+
+        for i, label in enumerate(columns):
             row = (i // 4) + 1
             col = (i % 4) * 2
 
-            ctk.CTkLabel(mandatory_frame, text=label).grid(row=row, column=col, padx=10, pady=10, sticky="news")
-            dropdown = ctk.CTkOptionMenu(mandatory_frame, width=150, values="", command=self.check_mandatory_fields)
-            dropdown.grid(row=row, column=col+1, padx=10, pady=10, sticky="news")
-            dropdown.set("- - - - - - - - -")
-            self.dropdowns.append((label, dropdown))
+            if not any(dropdown[0] == label for dropdown in self.dropdowns):
+                ctk.CTkLabel(self.mandatory_frame, text=label).grid(row=row, column=col, padx=10, pady=10, sticky="news")
+                dropdown = ctk.CTkOptionMenu(self.mandatory_frame, width=150, values="", command=self.check_mandatory_fields)
+                dropdown.grid(row=row, column=col+1, padx=10, pady=10, sticky="news")
+                dropdown.set("- - - - - - - - -")
+                self.dropdowns.append((label, dropdown))
+            else:
+                # If the dropdown already exists, just update its position
+                for label_text, dropdown in self.dropdowns:
+                    if label_text == label:
+                        dropdown.grid(row=row, column=col+1, padx=10, pady=10, sticky="news")
+                        break
+
+        # Remove dropdowns for fields that are no longer in the list
+        self.dropdowns = [(label, dropdown) for label, dropdown in self.dropdowns if label in columns]    
     
     def on_data_loaded(self, status):
     # Update the status label to show success when data is loaded
@@ -867,14 +900,15 @@ class Version2(ctk.CTk):
                     popup.destroy()
                     return
 
-        popup.update_status("Processing companies...")
+        popup.update_status("Processing companies ...")
+        
         for rowc in mylistc:
             company_id = rowc.get('Company_id')
             company_name = rowc.get('Company_Name')
             popup.update_status(f"Processing company: {company_name}")
 
             status_code, company_details = self.api_client.get_company_details(company_id)
-
+            sleep(5)
             if status_code != 404:
                 popup.show_success(f"Company ID {company_id} found")
             else:
@@ -888,6 +922,7 @@ class Version2(ctk.CTk):
                         popup.show_error(f"Failed to create Company ID {company_id}. Status code: {status_code}")
                 except Exception as e:
                     popup.show_error(f"Error creating Company {company_id}: {e}")
+
 
         popup.update_status("Processing participants...")
         specific_field_names = ["Amount", "Participant_Type"]

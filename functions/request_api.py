@@ -3,6 +3,7 @@ from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestExce
 from Models.model import APIError
 from config.config import TIMOUT
 from config.log_config import logger
+from functions.get_headers import get_headers
 import xml.etree.ElementTree as ET
 from globals.global_vars import configuration_data
 

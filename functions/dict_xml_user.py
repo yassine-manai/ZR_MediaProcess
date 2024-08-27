@@ -92,11 +92,6 @@ def consumer_to_xml(data):
     xml_content += f'<cm:validFrom>{data.get("Participant_ValidFrom", "")}</cm:validFrom>\n'
     xml_content += f'<cm:validUntil>{data.get("Participant_ValidUntil", "")}</cm:validUntil>\n'
     
-    # UsageProfile section inside Identification
-    xml_content += '<cm:usageProfile>\n'
-    xml_content += f'<cm:id>{1}</cm:id>\n'
-    xml_content += '</cm:usageProfile>\n'
-    
     xml_content += f'<cm:ptcptGrpNo>{data.get(-1, "")}</cm:ptcptGrpNo>\n'
     xml_content += f'<cm:status>{data.get(0, "0")}</cm:status>\n'
     xml_content += '</cm:identification>\n'

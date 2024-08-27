@@ -62,12 +62,16 @@ def participant_response_parser(response):
     else:
         raise ValueError("Invalid response format or status code.")
 
-def processshift(body: dict):
-    # <shiftId>1724675591</shiftId>
-    shift=body.find('<shiftId>')
-    shiftend=body.find('</shiftId>')
-    if shift > -1 and shiftend > shift:
-        return body[shift+len('<shiftId>'):shiftend]
+def processshift(body: str):
+    # Look for the start and end of the <shiftId> tag
+    shift_start = body.find('<shiftId>')
+    shift_end = body.find('</shiftId>')
+    
+    # If both tags are found, extract the shiftId
+    if shift_start > -1 and shift_end > shift_start:
+        return body[shift_start + len('<shiftId>'):shift_end]
+    
+    return None
     
 
 
@@ -78,21 +82,18 @@ def processshift(body: dict):
 def open_shift_response(response_dict):
     xml_string = response_dict.get('content', '')
     
-    # Parse the XML string
     root = ET.fromstring(xml_string)
     
-    # Define namespace for finding elements
-    namespace = {'ns': 'http://gsph.sub.com/payment/types'}
-    
-    # Find the shift element using the namespace
-    shift = root.find('.//ns:shift', namespaces=namespace)
+    # Find the shift element using the correct namespace
+    shift = root.find('.//{http://gsph.sub.com/payment/types}shift')
     
     # Extract shift details
-    shift_status = shift.findtext('ns:shiftStatus', default='Unknown', namespaces=namespace)
-    shift_id = shift.findtext('ns:shiftId', default='Unknown', namespaces=namespace)
-    shift_no = shift.findtext('ns:shiftNo', default='Unknown', namespaces=namespace)
+    shift_status = shift.findtext('{http://gsph.sub.com/payment/types}shiftStatus')
+    shift_id = shift.findtext('{http://gsph.sub.com/payment/types}shiftId')
+    shift_no = shift.findtext('{http://gsph.sub.com/payment/types}shiftNo')
 
     return shift_status, shift_id, shift_no
+
 
 # GET CURRENT SHIFT REPONSE PARSER 
 def current_shift_response(response_dict):
