@@ -171,7 +171,7 @@ class Version2(ctk.CTk):
         self.config_window.title("Configuration")
         #self.config_window.geometry(" W x H")
         self.config_window.geometry("400x480")
-        self.config_window.resizable(False, False)
+        self.config_window.resizable(True, True)
 
         # Center the config window
         self.center_window(self.config_window)
@@ -787,7 +787,7 @@ class Version2(ctk.CTk):
         self.timeline_label.grid(row=0, column=0, padx=5, pady=20)
 
         # Button 2: Start Process
-        self.button2 = ctk.CTkButton(button_frame, text="Start Process", command=self.main_process, state="disabled")
+        self.button2 = ctk.CTkButton(button_frame, width=160, height=35, text="Start Process", command=self.main_process, state="disabled")
         self.button2.grid(row=0, column=1, padx=5, pady=10)
         
         # Timeline Label
@@ -798,7 +798,7 @@ class Version2(ctk.CTk):
         global glob_vals
         template_ids = glob_vals
 
-        self.shift_api = ShiftPaymentAPIClient() 
+        self.shift_api = ShiftPaymentAPIClient()
         self.api_client = APIClient()
 
         popup = ProcessingPopup(self)
@@ -806,25 +806,26 @@ class Version2(ctk.CTk):
 
         header_state = self.no_headers_var.get()
         popup.update_status(f"Header State: {header_state}")
-        
+
         file_path = self.path_entry.get()
         popup.update_status("Reading CSV file...")
-        file_data = read_data_with_header(file_path, header_state)  
-        
-        popup.update_status("CSV file read successfully")
+        try:
+            file_data = read_data_with_header(file_path, header_state)
+            popup.show_success("CSV file read successfully")
+        except Exception as e:
+            popup.show_error(f"Failed to read CSV file: {e}")
+            popup.enable_ok_button()
+            return
 
         popup.update_status("Processing selected fields...")
         mymappingdict = {}
-        
+
         for label, dropdown in self.dropdowns:
-            if dropdown.get():
-                mymappingdict[label] = dropdown.get()
-            else:
-                mymappingdict[label] = "NOSELECTED"
-                
+            mymappingdict[label] = dropdown.get() if dropdown.get() else "NOSELECTED"
+
         for name, header in self.optional_fields:
             mymappingdict[name] = header
-        
+
         popup.update_status("Extracting data from selected fields...")
         data_rows = []
         for row in file_data:
@@ -833,18 +834,18 @@ class Version2(ctk.CTk):
 
         popup.update_status("Validating data...")
         mylistc = []
-        mylistp = []       
+        mylistp = []
 
         for row in data_rows:
             try:
                 company_valid = Company_validation(**row)
                 mylistc.append(company_valid.dict())
-                popup.update_status(f"Validated company: {row.get('Company_Name', 'Unknown')}")
+                popup.show_success(f"Validated company: {row.get('Company_Name', 'Unknown')}")
             except CompanyValidationError as e:
                 error_message = str(e)
-                popup.update_status(f"Company validation failed: {error_message}")
+                popup.show_error(f"Company validation failed: {error_message}")
                 response = self.custom_retry_continue_dialog(
-                    "Company Data Validation", 
+                    "Company Data Validation",
                     f"Validation failed: {error_message}\nDo you want to retry or continue?"
                 )
                 if response == "exit":
@@ -854,12 +855,12 @@ class Version2(ctk.CTk):
             try:
                 particpant_valid = Consumer_validation(**row)
                 mylistp.append(particpant_valid.dict())
-                popup.update_status(f"Validated participant: {row.get('Participant_Id', 'Unknown')}")
+                popup.show_success(f"Validated participant: {row.get('Participant_Id', 'Unknown')}")
             except ConsumerValidationError as e:
                 error_message = str(e)
-                popup.update_status(f"Consumer validation failed: {error_message}")
+                popup.show_error(f"Consumer validation failed: {error_message}")
                 response = self.custom_retry_continue_dialog(
-                    "Consumer Data Validation", 
+                    "Consumer Data Validation",
                     f"Validation failed: {error_message}\nDo you want to retry or continue?"
                 )
                 if response == "exit":
@@ -875,18 +876,18 @@ class Version2(ctk.CTk):
             status_code, company_details = self.api_client.get_company_details(company_id)
 
             if status_code != 404:
-                popup.update_status(f"Company ID {company_id} found")
+                popup.show_success(f"Company ID {company_id} found")
             else:
-                popup.update_status(f"Company ID {company_id} not found. Creating new company...")
+                popup.show_error(f"Company ID {company_id} not found. Creating new company...")
                 try:
                     xml_comp_data = contract_to_xml(rowc)
                     status_code, result = self.api_client.create_company(xml_comp_data)
                     if status_code == 201:
-                        popup.update_status(f"Company ID {company_id} created successfully")
+                        popup.show_success(f"Company ID {company_id} created successfully")
                     else:
-                        popup.update_status(f"Failed to create Company ID {company_id}. Status code: {status_code}")
+                        popup.show_error(f"Failed to create Company ID {company_id}. Status code: {status_code}")
                 except Exception as e:
-                    popup.update_status(f"Error creating Company {company_id}: {e}")
+                    popup.show_error(f"Error creating Company {company_id}: {e}")
 
         popup.update_status("Processing participants...")
         specific_field_names = ["Amount", "Participant_Type"]
@@ -903,16 +904,16 @@ class Version2(ctk.CTk):
 
             if not ptcpt_type_field:
                 topup_value = self.pmvc_var.get()
-                
+
                 if topup_value:
-                    popup.update_status("Warning: PMVC topup CheckBox is checked. Please add Participant Type or uncheck it.")
+                    popup.show_error("PMVC topup CheckBox is checked. Please add Participant Type or uncheck it.")
                     messagebox.showwarning("Warning", "The PMVC topup CheckBox is checked. Please add Participant Type or uncheck it.")
                     continue
 
                 status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
 
                 if status_code != 404:
-                    popup.update_status(f"Participant ID {participant_id} found for Company ID {company_id}")
+                    popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
                 else:
                     popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
                     template_id = template_ids["season_parker"]
@@ -920,11 +921,11 @@ class Version2(ctk.CTk):
 
                     xml_ptcpt_data = consumer_to_xml(rowp)
                     status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data.strip())
-                    
+
                     if status_code == 201:
-                        popup.update_status(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
+                        popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
                     else:
-                        popup.update_status(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
+                        popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
 
             elif ptcpt_type_field:
                 if Participant_Type == 2:
@@ -932,73 +933,71 @@ class Version2(ctk.CTk):
                     status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
 
                     if status_code != 404:
-                        popup.update_status(f"Participant ID {participant_id} found for Company ID {company_id}")
+                        popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
                     else:
                         popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
                         template_id = template_ids["season_parker"]
-                        
+
                         sleep(5)
 
                         xml_ptcpt_data = consumer_to_xml(rowp)
                         status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data)
-                        
+
                         if status_code == 201:
-                            popup.update_status(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
+                            popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
                         else:
-                            popup.update_status(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
+                            popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
 
                 elif Participant_Type == 6:
                     # Process PMVC
                     topup_value = self.pmvc_var.get()
-                    
-                    
+
                     if topup_value:
                         popup.update_status("TOPUP selected")
-                        
+
                         if not Amount:
-                            popup.update_status("Warning: The field Amount is missing. Please add it or uncheck the PMVC CheckBox.")
+                            popup.show_error("The field Amount is missing. Please add it or uncheck the PMVC CheckBox.")
                             messagebox.showwarning("Warning", "The field Amount is missing. Please add it or uncheck the PMVC CheckBox.")
                             continue
-                        
+
                         popup.update_status("Checking current shift...")
                         curr_status_code, curr_shift_detail = self.shift_api.get_current_shift_api(1)
                         stat = get_status_code(curr_shift_detail)
 
                         if stat == 200 or stat == 201:
                             shift_status, shift_id, shift_no = current_shift_response(curr_shift_detail)
-                            popup.update_status(f"Current shift found. ID: {shift_id}, Number: {shift_no}")
+                            popup.show_success(f"Current shift found. ID: {shift_id}, Number: {shift_no}")
                         else:
                             popup.update_status("No current shift found. Opening new shift...")
-                            
+
                             sleep(5)
 
                             op_shift = open_shift_xml()
                             status_code, shift_detail = self.shift_api.open_shift_api(op_shift)
                             if status_code == 200:
                                 shift_status, shift_id, shift_no = open_shift_response(shift_detail)
-                                popup.update_status(f"New shift opened. ID: {shift_id}, Number: {shift_no}")
+                                popup.show_success(f"New shift opened. ID: {shift_id}, Number: {shift_no}")
                             else:
-                                popup.update_status("Failed to open new shift")
+                                popup.show_error("Failed to open new shift")
                                 continue
 
                         money_balance = rowp.get('Amount')
                         status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
 
                         if status_code != 404:
-                            popup.update_status(f"Participant ID {participant_id} found for Company ID {company_id}")
+                            popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
                         else:
                             popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
                             template_id = template_ids["pmvc"]
                             xml_ptcpt_data = consumer_to_xml(rowp)
-                            
+
                             sleep(5)
 
                             status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data)
-                            
+
                             if status_code != 201:
-                                popup.update_status(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
+                                popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
                                 continue
-                            
 
                         if int(money_balance) > 0:
                             popup.update_status(f"Performing TOPUP for Participant ID {participant_id}")
@@ -1020,30 +1019,28 @@ class Version2(ctk.CTk):
                                     }
                                 ]
                             }
-                            
+
                             sleep(5)
 
                             data_topup_xml = topup_pmvc_xml(shift_id, data)
                             status_code_tp, shift_detail = self.shift_api.topup_pmvc_api(shift_id, data_topup_xml)
-                            
-                            if status_code_tp == 200 or status_code_tp == 201:
-                                popup.update_status("TOPUP completed successfully")
-                            else:
-                                popup.update_status(f"TOPUP failed. Status code: {status_code_tp}")
-                                continue
-                                
-                        if int(money_balance) == 0:
-                            logger.error("Topup amount is 0 , Skiping transaction")
-                            popup.update_status(f"Topup amount is 0 , Skiping transaction for Participant ID {participant_id}")
-                            continue
 
+                            if status_code_tp == 200 or status_code_tp == 201:
+                                popup.show_success("TOPUP completed successfully")
+                            else:
+                                popup.show_error(f"TOPUP failed. Status code: {status_code_tp}")
+                                continue
+
+                        if int(money_balance) == 0:
+                            popup.show_error("Topup amount is 0 , Skipping transaction")
+                            continue
 
                     else:
                         popup.update_status("TOPUP not selected. Processing PMVC participant without topup.")
                         status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
 
                         if status_code != 404:
-                            popup.update_status(f"Participant ID {participant_id} found for Company ID {company_id}")
+                            popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
                         else:
                             popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
                             template_id = template_ids["pmvc"]
@@ -1051,13 +1048,12 @@ class Version2(ctk.CTk):
 
                             xml_ptcpt_data = consumer_to_xml(rowp)
                             status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data)
-                            
-                            if status_code == 201:
-                                popup.update_status(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
-                            else:
-                                popup.update_status(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
 
-       
+                            if status_code == 201:
+                                popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
+                            else:
+                                popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
+
         popup.update_status("Processing completed!")
         popup.enable_ok_button()
 # -----------------------------------------------------------------------------------------------------------------
