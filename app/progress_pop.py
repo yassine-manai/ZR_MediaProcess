@@ -21,7 +21,7 @@ class ProcessingPopup(ctk.CTkToplevel):
         # Create OK button
         self.ok_button = ctk.CTkButton(self, text="OK", command=self.destroy, font=("Arial", 14), height=40)
         self.ok_button.grid(row=1, column=0, pady=10)
-        self.ok_button.configure(state="disabled")  # Initially disabled
+        #self.ok_button.configure(state="disabled")  # Initially disabled
 
     def update_status(self, message):
         self.text_widget.insert("end", message + "\n")
@@ -44,6 +44,6 @@ class ProcessingPopup(ctk.CTkToplevel):
     def format_message(self, message, icon, width=70):
         """Formats the message to align the icon at the end."""
         icon_position = width - len(icon) - 1  # Position for the icon
-        padded_message = message.ljust(icon_position)  # Left-justify the message
-        return f"{padded_message} {icon}\n"
+        padded_message = message.ljust(icon_position) 
+        return f"{padded_message} ------------------------------------ {icon}\n"
 

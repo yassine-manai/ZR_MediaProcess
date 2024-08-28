@@ -1,9 +1,11 @@
 from datetime import datetime
-from typing import Optional
+import re
 from pydantic import BaseModel, field_validator, model_validator
+from api.api_media import APIClient
 from classes.error_except import CompanyValidationError, ConsumerValidationError
 from globals.global_vars import glob_vals
 from config.log_config import logger
+from typing import Optional
 
 
 class Company_validation(BaseModel):
@@ -26,6 +28,7 @@ class Company_validation(BaseModel):
     def validate_positive_data(cls, value, info):
         value = int(value)
         if value <= 1 or value > 99999:
+            
             raise CompanyValidationError(f"Value {value} is out of range for {info.field_name}. \n Must be between 2 and 99999.")
         return value
 
@@ -37,12 +40,22 @@ class Company_validation(BaseModel):
         if value:
             try:
                 date_obj = datetime.strptime(value, init_format)
+                print(date_obj)
                 return date_obj.strftime("%Y-%m-%d")
             
             except ValueError:
+                logger.error(f"Invalid date format value:{value} : format selected format:{init_format}")
                 raise CompanyValidationError(f"Invalid date format for {info.field_name}. \n Data values in CSV file must be in selected format : {init_format}\n. Check your file or check your selected Date fromat ")
             
         return value
+    
+    @field_validator('Company_Name')
+    def check_no_special_characters(cls, value):
+        if not re.match(r'^[a-zA-Z]+$', value):
+            raise ConsumerValidationError(f"The field {cls.__name__} cannot contain special characters.")
+        return value
+    
+    
 
     @model_validator(mode='before')
     def check_mandatory_fields(cls, values):
@@ -54,16 +67,15 @@ class Company_validation(BaseModel):
 
 
 
-from typing import Optional
-from pydantic import BaseModel, field_validator, model_validator
-from dateutil.parser import parse
+
 
 class Consumer_validation(BaseModel):
+    
     # Mandatory fields
     Participant_Id: int
     Participant_Firstname: str
     Participant_Surname: str
-    Participant_CardNumber: str
+    Participant_CardNumber: int
     Company_id: int
     
     # Optional fields
@@ -81,6 +93,8 @@ class Consumer_validation(BaseModel):
     Participant_LPN2: Optional[str] = ''   
     Participant_LPN3: Optional[str] = ''
     Amount: Optional[int] = 0
+    
+    
 
     @field_validator('Participant_Id', 'Company_FilialId', mode='before')
     def validate_positive_data(cls, value, info):
@@ -108,11 +122,31 @@ class Consumer_validation(BaseModel):
 
     @model_validator(mode='before')
     def check_mandatory_fields(cls, values):
-        mandatory_fields = ['Participant_Id','Participant_ValidUntil','Participant_ValidFrom', 'Participant_Firstname', 'Participant_Surname', 'Participant_CardNumber', 'Company_id']
+        mandatory_fields = ['Participant_Id','Participant_ValidUntil','Participant_ValidFrom', 'Company_id']
         for field in mandatory_fields:
             if not values.get(field):
                 raise ConsumerValidationError(f"The field {field} is mandatory and cannot be empty.")
         return values
+    
+    @field_validator('Participant_Firstname', 'Participant_Surname')
+    def check_no_special_characters(cls, value):
+        if not re.match(r'^[a-zA-Z]+$', value):
+            raise ConsumerValidationError(f"The field {cls.__name__} cannot contain special characters.")
+        return value
+    
+    
+    @field_validator('Participant_CardNumber')
+    def check_cardNb(cls, value):
+        value = int(value)
+        carnb_status, cardnb_detail = APIClient().get_cardNumber(value)
+        if carnb_status == 201 or carnb_status == 404:
+            logger.info(f"Card number {value} is not used in system.")
+            return value
+        
+        if carnb_status == 200:
+            logger.info(f"Card number {value} is used in system ")
+            raise ConsumerValidationError(f"The field {cls.__name__} contain a CardNumber : {value} already exist in system")
+    
     
     @field_validator('Participant_Type', mode='before')
     def validate_ptcpt_type(cls, value: str) -> int:
@@ -127,6 +161,27 @@ class Consumer_validation(BaseModel):
         
         return int_value
     
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
     
 """     @field_validator('Amount', mode='before')
     def validate_amount(cls, value: str) -> int:
@@ -137,7 +192,7 @@ class Consumer_validation(BaseModel):
         
         # Ensure the integer value is either 2 or 6
         if int_value == 0:
-            raise ConsumerValidationError(f"Invalid value {int_value} for Participant_Type. Must be 2 or 6.")
+            raise ConsumerValidationError(f"Money valu")
         
         return int_value """
     

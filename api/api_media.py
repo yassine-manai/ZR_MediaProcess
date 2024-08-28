@@ -18,6 +18,8 @@ class APIClient:
         
         self.protocol = "https"
         self.url_api = f"{self.protocol}://{self.url}/CustomerMediaWebService"
+        
+        #logger.debug(f" API request URL : {self.url_api}")
 
     # Company Section
     @handle_api_error
@@ -44,6 +46,11 @@ class APIClient:
     def update_participant(self, company_id: int, participant_id: int, data: str) -> Tuple[int, dict]:
         logger.debug(f"Updating participant for company ID {company_id} with data: {data}")
         return make_request("PUT", f"{self.url_api}/consumers/{company_id},{participant_id}/detail", data=data)
+    
+    @handle_api_error
+    def get_cardNumber(self, cardNbr: int) -> Tuple[int, dict]:
+        return make_request("GET", f"{self.url_api}/consumers?cardno={cardNbr}")
+
 
     @handle_api_error
     def update_company(self, company_id: int, data: str) -> Tuple[int, dict]:

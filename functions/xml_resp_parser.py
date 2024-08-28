@@ -102,15 +102,12 @@ def current_shift_response(response_dict):
     # Parse the XML string
     root = ET.fromstring(xml_string)
 
-    # Find the first shift element
-    shift = root.find('.//{http://gsph.sub.com/payment/types}shift')
-    if shift is not None:
-        # Extract shift details
-        shift_status = shift.findtext('{http://gsph.sub.com/payment/types}shiftStatus')
-        shift_id = shift.findtext('{http://gsph.sub.com/payment/types}shiftId')
-        shift_no = shift.findtext('{http://gsph.sub.com/payment/types}shiftNo')
+    # Extract shift details using their specific tags
+    shift_status = root.findtext('.//{http://gsph.sub.com/payment/types}shiftStatus')
+    shift_id = root.findtext('.//{http://gsph.sub.com/payment/types}shiftId')
+    shift_no = root.findtext('.//{http://gsph.sub.com/payment/types}shiftNo')
 
-        return shift_status, shift_id, shift_no
+    return shift_status, shift_id, shift_no
 
 
 

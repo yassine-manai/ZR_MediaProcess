@@ -18,15 +18,11 @@ def handle_api_error(func):
             return func(*args, **kwargs)
         except requests.RequestException as e:
             logger.error(f"API request failed: {str(e)}")
-            raise Error(
-                f"API request failed: {str(e)}",
-                getattr(e.response, 'status_code', None),
-                getattr(e.response, 'text', None)
-            )
+        
         except ValueError as e:
             logger.error(f"Invalid input: {str(e)}")
-            raise Error(f"Invalid input: {str(e)}")
+            #raise Error(f"Invalid input: {str(e)}")
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
-            raise Error(f"Unexpected error: {str(e)}")
+            #raise Error(f"Unexpected error: {str(e)}")
     return wrapper

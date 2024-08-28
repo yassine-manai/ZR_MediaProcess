@@ -14,17 +14,17 @@ def test_zr_connection():
     try:
         status_code, version = api_client.get_company_version()
         
+        
         if status_code != 404:
             logger.success("Connection established")
-            logger.debug(f"Version Response : {version}")
-            logger.debug(f"Status Code Response : {status_code}")            
-            messagebox.showinfo("Success", f"ZR Connection Established successfully")
+            logger.debug(f"Version Response : {status_code} ---- {version}")
+            #logger.debug(f"Status Code Response : {status_code}")            
+            #messagebox.showinfo("Success", f"ZR Connection Established successfully")
             
     
         if status_code == 404:
-            logger.debug(f"Version Response : {version}")
-            logger.debug(f"Status Code Response : {status_code}")
-            logger.error(f"Connection not established with ZR \n")
+            logger.debug(f"Connection not established with ZR --------- Status Code Response : {status_code} -- {version}")
+            #logger.error(f"Connection not established with ZR \n")
             messagebox.showinfo("Retry", "Connection not established with ZR. \n Would you like to retry?")
             
         
