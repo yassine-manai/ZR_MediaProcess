@@ -26,8 +26,25 @@ class Version2(ctk.CTk):
         super().__init__()
         self.title("PAYG Import Tool")
 
+
+        # Set the geometry of the window
         self.geometry("1300x740")
         self.resizable(False, False)
+
+        # Center the window on the screen
+        self.center_cusom()
+
+
+        """  # Get the user's screen size
+        screen_width = self.config_window.winfo_screenwidth()
+        screen_height = self.config_window.winfo_screenheight()
+
+        # Set the window size to 80% of the screen size, for example
+        window_width = int(screen_width * 0.25)
+        window_height = int(screen_height * 0.58)
+
+        # Set the window size and position
+        self.geometry(f"{window_width}x{window_height}+{int((screen_width - window_width) / 2)}+{int((screen_height - window_height) / 2)}")"""
 
         self.date_format_dict = {
             "dd-mm-yyyy": "%d-%m-%Y",
@@ -78,6 +95,19 @@ class Version2(ctk.CTk):
         self.create_main_frame()
         self.create_footer_frame()
 
+    def center_cusom(self):
+        # Calculate the position for the window to be centered
+        window_width = 1300
+        window_height = 740
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        x = int((screen_width / 2) - (window_width / 2))
+        y = int((screen_height / 2) - (window_height / 2))
+
+        # Set the window's position
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        
 
 
     def custom_error_dialog(self, title, message):
@@ -180,7 +210,7 @@ class Version2(ctk.CTk):
 
         # Set the window size and position
         self.config_window.geometry(f"{window_width}x{window_height}+{int((screen_width - window_width) / 2)}+{int((screen_height - window_height) / 2)}")
-        self.config_window.resizable(True, True)
+        self.config_window.resizable(False, False)
 
         # Center the config window (might be redundant now)
         self.center_window(self.config_window)
@@ -422,9 +452,6 @@ class Version2(ctk.CTk):
         self.save_config()
         #print(self.zr_ip_entry.get().strip())
         print("\n ------------------------------ TEST CONNECTION TO SHIFT ------------------------------ \n")
-
-
-        logger.info('Checking Shift -----------------------------------------------------------------------')
         try:
             shift_id = self.ensure_open_shift()
             if shift_id:
@@ -479,7 +506,7 @@ class Version2(ctk.CTk):
             logger.error(f"Error checking shift: {str(e)}" )
             messagebox.showerror("Error", f"An error occurred while checking the shift: {str(e)}")
             return False
-
+    
     def update_save_button_state(self):
         zr_success = self.check_zr_button.cget('fg_color') == 'green'
         shift_success = self.check_shift_button.cget('fg_color') == 'green'
@@ -625,18 +652,22 @@ class Version2(ctk.CTk):
                 logger.success("Data loaded without headers...")
                 data = result
                 headers = result[0].keys() if result else ()
-                
+                                
+                print(" / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /")
                 print(headers)  
+                print(" / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /")
                 print(data)
-                print("****************************************************************")
+                print(" / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /")
                 
             else:
                 logger.success("Data loaded with headers...")
 
                 data = result
                 headers = data[0].keys() if data else []
-
+                
+                print("****************************************************************")
                 print(headers)
+                print("****************************************************************")
                 print(data)
                 print("****************************************************************")
                 
@@ -913,32 +944,44 @@ class Version2(ctk.CTk):
             mymappingdict = {}
 
             sleep(1)
-
+            
             for label, dropdown in self.dropdowns:
-                logger.debug(self.dropdown)
-                mymappingdict[label] = dropdown.get() if dropdown.get() else "NOSELECTED"
+                if dropdown.get():
+                    mymappingdict[label] = dropdown.get()
+                else:
+                    mymappingdict[label] = "NOSELECTED"
 
             for name, header in self.optional_fields:
+                logger.debug(f"Optional fields : {self.optional_fields}")
                 mymappingdict[name] = header
 
             popup.update_status("Extracting data from selected fields...")
-            data_rows = []
             
             print("\n --------------------- GET DATA FROM SELECT FIELDS -------------------- ")
-
+            
+            data_rows=list()
             for row in file_data: # run on each row
                 newdict=dict()
                 for k,v in mymappingdict.items(): # run on eaych k,v
-                    newdict[k]=row.get(v, 'ERROR')
+                    newdict[k]=row.get(v,'ERROR')
                     #print(k,v)
                 data_rows.append(newdict)
                 logger.debug(newdict)
+                
+            print('** ** ** **')
+            logger.debug(data_rows)
+            
+            print("\n================================")
+            
+            logger.debug(f"My mapping dict : {mymappingdict}")
 
             popup.update_status("Validating data...")
 
 
             sleep(1)
 
+
+                
             for row in data_rows:
                 try:
                     company_valid = Company_validation(**row)
@@ -993,7 +1036,11 @@ class Version2(ctk.CTk):
             logger.success(f"Validation Data Success")
             popup.show_success(f"Data Validation Success")
             #popup.destroy()
-                
+            
+            logger.debug(f" Validated cpm list {mylistc}")
+            print("\n")
+            logger.debug(f" Validated ptcpt list {mylistp}")
+
             return mylistc, mylistp
         
         if not self.state_popup:

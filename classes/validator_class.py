@@ -79,14 +79,14 @@ class Consumer_validation(BaseModel):
     Company_id: int
     
     # Optional fields
-    Company_FilialId: Optional[int] = 7001
+    Company_FilialId: Optional[int] = 0
     Participant_Type: Optional[int] = 2
     Participant_Cardclass: Optional[str] = ''
     Participant_IdentificationType: Optional[str] = ''
     Participant_ValidFrom: Optional[str] = ''
     Participant_ValidUntil: Optional[str] = ''
     Participant_Status: Optional[int] = 0
-    Participant_GrpNo: Optional[int] = None   
+    Participant_GrpNo: Optional[int] = 0   
     Participant_Present: Optional[str] = ''
     Participant_DisplayText: Optional[str] = ''
     Participant_LPN1: Optional[str] = ''   
