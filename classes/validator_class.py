@@ -69,6 +69,7 @@ class Company_validation(BaseModel):
 
 
 
+
 class Consumer_validation(BaseModel):
     
     # Mandatory fields
@@ -139,14 +140,29 @@ class Consumer_validation(BaseModel):
     def check_cardNb(cls, value):
         value = int(value)
         carnb_status, cardnb_detail = APIClient().get_cardNumber(value)
-        if carnb_status == 201 or carnb_status == 404:
-            logger.info(f"Card number {value} is not used in system.")
-            return value
-        
         if carnb_status == 200:
-            logger.info(f"Card number {value} is used in system ")
+            logger.warning(f"Card number {value} is used in system ")
             raise ConsumerValidationError(f"The field {cls.__name__} contain a CardNumber : {value} already exist in system")
-    
+        else:
+            logger.info(f"Card number {value} is not used in system.")
+            return value    
+        
+    @model_validator(mode='before')
+    def validate_dates(cls, values):
+        global glob_vals
+        valid_from = values.get('Participant_ValidFrom')
+        valid_until = values.get('Participant_ValidUntil')
+        
+        if valid_from and valid_until:
+            # Convert strings to datetime objects
+            init_format = glob_vals['date_format_val']
+            valid_from_date = datetime.strptime(valid_from, init_format)
+            valid_until_date = datetime.strptime(valid_until, init_format)
+            
+            if valid_from_date > valid_until_date:
+                raise ConsumerValidationError("Participant_ValidFrom must be earlier than Participant_ValidUntil.")
+        
+        return values
     
     @field_validator('Participant_Type', mode='before')
     def validate_ptcpt_type(cls, value: str) -> int:

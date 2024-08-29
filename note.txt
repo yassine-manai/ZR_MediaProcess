@@ -1,0 +1,13 @@
+clear log -- rmv password 
+
+remv console -- build 
+
+buttons enhance -- 
+
+enhancement -- tips 
+
+version ml version - txt
+
+close shift 
+
+card nbr --- optional if no card selected 

@@ -769,7 +769,7 @@ class Version2(ctk.CTk):
         
         self.update_mandatory_fields()
         self.update_optional_fields_dropdown()  
-        #self.load_file_data()
+        self.load_file_data()
 
 # ------------------------------------------------------------------------------------------------------------
 
@@ -903,262 +903,145 @@ class Version2(ctk.CTk):
         self.button2.grid(row=0, column=2, padx=5, pady=10)
         
     def validating_data(self):
-        if self.state_popup:
                     
-            self.button1.configure(text=f"Validating data ⏳", state="normal")
+        self.button1.configure(text=f"Validating data ⏳", state="normal")
 
-            
-            popup = ProcessingPopup(self)
-            popup.update_status("Initializing... \n ")
-
-            mylistc = []
-            mylistp = []
-            
-            
-            sleep(1)
-            
-            header_state = self.no_headers_var.get()
-            popup.update_status(f"Header State: {header_state}")
-
-            file_path = self.path_entry.get()
-            popup.update_status("Reading CSV file...")
-            
-            sleep(1)
-
-
-            try:
-                file_data = read_data_with_header(file_path, header_state)
-                logger.debug(file_data)
-                popup.show_success("CSV file read successfully")
-            except Exception as e:
-                self.button1.configure(text=f"Error Reading File ❌", fg_color="red")
-                logger.error(f"Validation Data Failed")
-                
-                self.config_window.after(2000, lambda: self.button1.configure(text="Retry Process", fg_color='dodgerblue3', state="normal"))
-                
-                popup.show_error(f"Failed to read CSV file: {e}")
-                popup.enable_ok_button()
-                return
-
-            popup.update_status("Processing selected fields...")
-            mymappingdict = {}
-
-            sleep(1)
-            
-            for label, dropdown in self.dropdowns:
-                if dropdown.get():
-                    mymappingdict[label] = dropdown.get()
-                else:
-                    mymappingdict[label] = "NOSELECTED"
-
-            for name, header in self.optional_fields:
-                logger.debug(f"Optional fields : {self.optional_fields}")
-                mymappingdict[name] = header
-
-            popup.update_status("Extracting data from selected fields...")
-            
-            print("\n --------------------- GET DATA FROM SELECT FIELDS -------------------- ")
-            
-            data_rows=list()
-            for row in file_data: # run on each row
-                newdict=dict()
-                for k,v in mymappingdict.items(): # run on eaych k,v
-                    newdict[k]=row.get(v,'ERROR')
-                    #print(k,v)
-                data_rows.append(newdict)
-                logger.debug(newdict)
-                
-            print('** ** ** **')
-            logger.debug(data_rows)
-            
-            print("\n================================")
-            
-            logger.debug(f"My mapping dict : {mymappingdict}")
-
-            popup.update_status("Validating data...")
-
-
-            sleep(1)
-
-
-                
-            for row in data_rows:
-                try:
-                    company_valid = Company_validation(**row)
-                    mylistc.append(company_valid.dict())
-                    popup.show_success(f"Validated company: {row.get('Company_Name', 'Unknown')} ------ {row.get('Company_id', 'Unknown')}")
-                
-                except CompanyValidationError as e:
-                    error_message = str(e)
-                    self.button1.configure(text=f"Error Validation ❌", fg_color="red")
-                    logger.error(f"Validation Data Failed")
-                    self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
-                    self.button2.configure(state="normal")
-
-                    popup.destroy()
-                    response = self.custom_retry_continue_dialog(
-                        "Company Data Validation",
-                        f"Validation failed: {error_message}\n Do you want to retry or continue?"
-                    )
-                    if response == "exit":
-                        popup.destroy()
-                        return
-                    
-
-                try:
-                    particpant_valid = Consumer_validation(**row)
-                    mylistp.append(particpant_valid.dict())
-                    popup.show_success(f"Validated participant: {row.get('Participant_Id', 'Unknown')}")
-                
-                except ConsumerValidationError as e:
-                    error_message = str(e)
-                    
-                    self.button1.configure(text=f"Error Validation ❌", fg_color="red")
-                    self.button2.configure(state="normal")
-                    logger.error(f"Validation Data Failed")
-                    
-                    self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
-
-                    popup.destroy()
-                    response = self.custom_retry_continue_dialog(
-                        "Consumer Data Validation",
-                        f"Validation failed: {error_message}\nDo you want to retry or continue?"
-                    )
-                    if response == "exit":
-                        popup.destroy()
-                        return
-            
-            sleep(1)
-            self.button1.configure(text=f"  Validation Success ✔️", fg_color="green")
-            self.button2.configure(state="normal")
-            self.button1.configure(state="normal")
-
-            logger.success(f"Validation Data Success")
-            popup.show_success(f"Data Validation Success")
-            #popup.destroy()
-            
-            logger.debug(f" Validated cpm list {mylistc}")
-            print("\n")
-            logger.debug(f" Validated ptcpt list {mylistp}")
-
-            return mylistc, mylistp
         
-        if not self.state_popup:
-            #popup = ProcessingPopup(self)
-            #popup.update_status("Initializing... \n ")
+        popup = ProcessingPopup(self)
+        popup.update_status("Initializing... \n ")
 
-            mylistc = []
-            mylistp = []
-            
-            
-            sleep(1)
-            
-            header_state = self.no_headers_var.get()
-            #popup.update_status(f"Header State: {header_state}")
 
-            file_path = self.path_entry.get()
-            #popup.update_status("Reading CSV file...")
-            
-            sleep(1)
+        
+        
+        sleep(1)
+        
+        header_state = self.no_headers_var.get()
+        popup.update_status(f"Header State: {header_state}")
 
+        file_path = self.path_entry.get()
+        popup.update_status("Reading CSV file...")
+        
+        sleep(1)
+
+
+        try:
+            file_data = read_data_with_header(file_path, header_state)
+            logger.debug(file_data)
+            popup.show_success("CSV file read successfully")
+        except Exception as e:
+            self.button1.configure(text=f"Error Reading File ❌", fg_color="red")
+            logger.error(f"Validation Data Failed")
+            
+            self.config_window.after(2000, lambda: self.button1.configure(text="Retry Process", fg_color='dodgerblue3', state="normal"))
+            
+            popup.show_error(f"Failed to read CSV file: {e}")
+            popup.enable_ok_button()
+            return
+
+        popup.update_status("Processing selected fields...")
+        mymappingdict = {}
+
+        sleep(1)
+        
+        for label, dropdown in self.dropdowns:
+            if dropdown.get():
+                mymappingdict[label] = dropdown.get()
+            else:
+                mymappingdict[label] = "NOSELECTED"
+
+        for name, header in self.optional_fields:
+            logger.debug(f"Optional fields : {self.optional_fields}")
+            mymappingdict[name] = header
+
+        popup.update_status("Extracting data from selected fields...")
+        
+        print("\n --------------------- GET DATA FROM SELECT FIELDS -------------------- ")
+        
+        data_rows=list()
+        for row in file_data: # run on each row
+            newdict=dict()
+            for k,v in mymappingdict.items(): # run on eaych k,v
+                newdict[k]=row.get(v,'ERROR')
+                #print(k,v)
+            data_rows.append(newdict)
+            logger.debug(newdict)
+            
+        print('** ** ** **')
+        logger.debug(data_rows)
+        
+        print("\n================================")
+        
+        logger.debug(f"My mapping dict : {mymappingdict}")
+
+        popup.update_status("Validating data...")
+
+
+        sleep(1)
+
+        mylistc = []
+        mylistp = []
+            
+        for row in data_rows:
+            try:
+                company_valid = Company_validation(**row)
+                mylistc.append(company_valid.dict())
+                popup.show_success(f"Validated company: {row.get('Company_Name', 'Unknown')} ------ {row.get('Company_id', 'Unknown')}")
+            
+            except CompanyValidationError as e:
+                error_message = str(e)
+                self.button1.configure(text=f"Error Validation ❌", fg_color="red")
+                logger.error(f"Validation Data Failed")
+                self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
+                self.button2.configure(state="normal")
+
+                popup.destroy()
+                response = self.custom_retry_continue_dialog(
+                    "Company Data Validation",
+                    f"Validation failed: {error_message}\n Do you want to retry or continue?"
+                )
+                if response == "exit":
+                    popup.destroy()
+                    return
+                
 
             try:
-                file_data = read_data_with_header(file_path, header_state)
-                #popup.show_success("CSV file read successfully")
-            except Exception as e:
-                #self.button1.configure(text=f"Error Reading File ❌", fg_color="red")
+                particpant_valid = Consumer_validation(**row)
+                mylistp.append(particpant_valid.dict())
+                popup.show_success(f"Validated participant: {row.get('Participant_Id', 'Unknown')}")
+            
+            except ConsumerValidationError as e:
+                error_message = str(e)
+                
+                self.button1.configure(text=f"Error Validation ❌", fg_color="red")
+                self.button2.configure(state="normal")
                 logger.error(f"Validation Data Failed")
                 
-                self.config_window.after(2000, lambda: self.button1.configure(text="Retry Process", fg_color='dodgerblue3', state="normal"))
-                
-                #popup.show_error(f"Failed to read CSV file: {e}")
-                #popup.enable_ok_button()
-                return
+                self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
 
-            #popup.update_status("Processing selected fields...")
-            mymappingdict = {}
+                popup.destroy()
+                response = self.custom_retry_continue_dialog(
+                    "Consumer Data Validation",
+                    f"Validation failed: {error_message}\nDo you want to retry or continue?"
+                )
+                if response == "exit":
+                    popup.destroy()
+                    return
+        
+        sleep(1)
+        self.button1.configure(text=f"  Validation Success ✔️", fg_color="green")
+        self.button2.configure(state="normal")
+        self.button1.configure(state="normal")
 
-            sleep(1)
+        logger.success(f"Validation Data Success")
+        popup.show_success(f"Data Validation Success")
+        #popup.destroy()
+        
+        logger.debug(f" Validated cpm list {mylistc}")
+        print("\n")
+        logger.debug(f" Validated ptcpt list {mylistp}")
 
-            for label, dropdown in self.dropdowns:
-                mymappingdict[label] = dropdown.get() if dropdown.get() else "NOSELECTED"
-
-            for name, header in self.optional_fields:
-                mymappingdict[name] = header
-
-            #popup.update_status("Extracting data from selected fields...")
-            data_rows = []
-            
-            print("\n --------------------- GET DATA FROM SELECT FIELDS -------------------- ")
-
-            for row in file_data: # run on each row
-                newdict=dict()
-                for k,v in mymappingdict.items(): # run on eaych k,v
-                    newdict[k]=row.get(v, 'ERROR')
-                    #print(k,v)
-                data_rows.append(newdict)
-                logger.debug(newdict)
-
-            #popup.update_status("Validating data...")
-
-
-            sleep(1)
-
-            for row in data_rows:
-                try:
-                    company_valid = Company_validation(**row)
-                    mylistc.append(company_valid.dict())
-                    #popup.show_success(f"Validated company: {row.get('Company_Name', 'Unknown')} ------ {row.get('Company_id', 'Unknown')}")
-                
-                except CompanyValidationError as e:
-                    error_message = str(e)
-                    #self.button1.configure(text=f"Error Validation ❌", fg_color="red")
-                    logger.error(f"Validation Data Failed")
-                    #self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
-                    #self.button2.configure(state="normal")
-
-                    #popup.destroy()
-                    response = self.custom_retry_continue_dialog(
-                        "Company Data Validation",
-                        f"Validation failed: {error_message}\n Do you want to retry or continue?"
-                    )
-                    if response == "exit":
-                        popup.destroy()
-                        return
-                    
-
-                try:
-                    particpant_valid = Consumer_validation(**row)
-                    mylistp.append(particpant_valid.dict())
-                    #popup.show_success(f"Validated participant: {row.get('Participant_Id', 'Unknown')}")
-                
-                except ConsumerValidationError as e:
-                    error_message = str(e)
-                    
-                    #self.button1.configure(text=f"Error Validation ❌", fg_color="red")
-                    #self.button2.configure(state="normal")
-                    logger.error(f"Validation Data Failed")
-                    
-                    #self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
-
-                    #popup.destroy()
-                    response = self.custom_retry_continue_dialog(
-                        "Consumer Data Validation",
-                        f"Validation failed: {error_message}\nDo you want to retry or continue?"
-                    )
-                    if response == "exit":
-                        #popup.destroy()
-                        return
-            
-            sleep(1)
-            #self.button1.configure(text=f"  Validation Success ✔️", fg_color="green", state="normal")
-            #self.button2.configure(state="normal")
-
-            logger.success(f"Validation Data Success")
-            #popup.show_success(f"Data Validation Success")
-            #popup.destroy()
-                
-            return mylistc, mylistp
+        return mylistc, mylistp
+        
             
     def main_process(self):
         global glob_vals, configuration_data
@@ -1176,7 +1059,6 @@ class Version2(ctk.CTk):
         popup.update_status(f"Starting API Calls with timeout {timeout}...")
         logger.debug(f"Starting API Calls with timeout {timeout}")
 
-        self.state_popup = False
         mylistc, mylistp = self.validating_data()
         
         popup.update_status("Processing companies ... \n ")
@@ -1428,7 +1310,7 @@ class Version2(ctk.CTk):
         footer_frame.grid(row=2, column=0, sticky="ew")
         footer_frame.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(footer_frame, text="Version 1.2.0", text_color="white", corner_radius=8).grid(row=0, column=0, sticky="e")
+        ctk.CTkLabel(footer_frame, text="Version 1.2.1 BETA", text_color="white", corner_radius=8).grid(row=0, column=0, sticky="e")
         ctk.CTkLabel(footer_frame, text="Asteroidea © 2024", text_color="white", corner_radius=8).grid(row=0, column=0, sticky="w")   
         
         link_button = ctk.CTkButton(footer_frame, text="Asteroidea © 2024", fg_color="transparent", text_color="white",hover_color=("gray70", "gray30"), border_width=0, cursor="hand2", command=self.open_link)
