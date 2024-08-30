@@ -1,12 +1,4 @@
 
-data_csv: dict = {
-    'template_id':"",
-    'file_path': "//",
-    'no_headers':"",
-    'mandatory_fields':"",
-    'optional_fields':"",
-    'rows_data':""
-}
 
 zr_data: dict = {
     'zr_ip': "127.0.0.1",
@@ -47,10 +39,13 @@ configuration_data  : dict = {
 
 
 
-
 data_validated : dict = {
     'mylistc': [],
     'mylistp': []
 }
 
 
+
+validated : dict = {
+ 'ptcpt_validated': [],   
+}

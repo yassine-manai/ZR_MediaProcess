@@ -2,4 +2,4 @@ venv
 **logs
 
 **note.txt
-**build
+./build

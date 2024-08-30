@@ -14,6 +14,7 @@ class ProcessingPopup(ctk.CTkToplevel):
 
         # Create text widget
         self.text_widget = ctk.CTkTextbox(self, wrap="word", height=300, width=550, font=("Arial", 14))
+        self.text_widget.configure(state="disabled")
         self.text_widget.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
 
         # Create progress bar
@@ -31,16 +32,21 @@ class ProcessingPopup(ctk.CTkToplevel):
         self.ok_button.configure(state="disabled")  # Initially disabled
 
     def update_status(self, message):
+        self.text_widget.configure(state="normal")
+
         self.text_widget.insert("end", message + "\n")
         self.text_widget.see("end")
+        self.text_widget.configure(state="disabled")
         self.update()
 
     def enable_ok_button(self):
         self.ok_button.configure(state="normal")
 
     def show_error(self, error_message):
+        self.text_widget.configure(state="normal")
         formatted_message = self.format_message(error_message, "❌")
         self.update_status(formatted_message)
+        self.text_widget.configure(state="disabled")
         self.enable_ok_button()
 
     def show_success(self, success_message):

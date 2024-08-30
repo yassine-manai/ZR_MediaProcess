@@ -22,32 +22,22 @@ class TipsPopup(ctk.CTkToplevel):
 Tips and Instructions:
 
 Step 1: Launch the application and review these instructions.
-Step 2: Click on (Configuration) to configure and check connection to ZR server and save it.
-Step 3: Click on (Browse) to select your PAYG data file (CSV).
-Step 4: Check if your date format is the same as the date format in the file.
-Step 5: If you check the (PMVC Topup) ensure that the file contains Amount values without commas, periods, or special characters.
-Step 6: Verify that all template values are the same on the ZR server.
 
-Step 7: If your file contains headers, keep the (No Header) Checkbox unchecked; if not, check it.
+Step 2: Check if your date format is the same as the date format in the file.
 
-Step 8: Verify that all mandatory columns are present in your file.
+Step 3: If you check the (PMVC Topup) ensure that the file contains Amount values without commas, periods, or special characters.
 
-Step 9: To add optional fields, add the field name and match it with the header in your file using the (+) button.
+Step 4: Verify that all template values are the same on the ZR server.
 
-Step 10: To remove an optional field, use the (x) button.
+Step 5: Click 'Validate Data' to check for errors or inconsistencies.
 
-Step 11: Click 'Validate Data' to check for errors or inconsistencies.
+Step 6: Review the validation results and make necessary corrections to your data.
 
-Step 12: Review the validation results and make necessary corrections to your data.
+Step 7: Once validation is successful, click (Start Process) to begin the import.
 
-Step 13: Once validation is successful, click (Start Process) to begin the import.
+Step 8: Monitor the import progress and wait for the completion message.
 
-Step 14: Monitor the import progress and wait for the completion message.
-
-Step 15: After import, verify the data in the system for accuracy.
-
-
-
+Step 9: After import, verify the data in the system for accuracy.
 
 
 ------------------------------------------------------------------  Enjoy using the PAYG Import Tool! ------------------------------------------------------------------

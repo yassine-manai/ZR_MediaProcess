@@ -181,7 +181,6 @@ class Consumer_validation(BaseModel):
             raise ConsumerValidationError(f"Invalid value {int_value} for Participant_Type. Must be 2 or 6.")
         
         return int_value
-
   
     
     @field_validator('Amount', mode='before')

@@ -1,10 +1,10 @@
-from app.version import Version2
+from app.import_tool import PAYG_ImportTool
 
 
 
 def main():
     
-    app= Version2()
+    app= PAYG_ImportTool()
     app.mainloop()
 
 

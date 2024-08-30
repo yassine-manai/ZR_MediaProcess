@@ -6,8 +6,8 @@ remv console -- build
 buttons enhance -- 
 close shift 
 txt -- btns 
-valdiation company exist or not store date --- 
 the optional fields enhancemnet order 
+
 
 * * * dash * * * 
 
@@ -19,6 +19,7 @@ rmv password  - log
 version ml version - txt
 enhancement -- tips 
 checking company in valdiation
+valdiation company exist or not
 
 
 

@@ -15,13 +15,13 @@ from functions.dict_xml_user import consumer_to_xml, contract_to_xml
 from functions.shift_dict_xml import close_shift_xml, open_shift_xml, topup_pmvc_xml
 from functions.test_connect import test_zr_connection
 from functions.xml_resp_parser import current_shift_response, get_status_code, open_shift_response, processshift
-from globals.global_vars import zr_data, glob_vals, configuration_data, data_validated
+from globals.global_vars import zr_data, glob_vals, configuration_data, data_validated, validated
 from functions.load_data import read_data_with_header
 
 ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")    
 
-class Version2(ctk.CTk):
+class PAYG_ImportTool(ctk.CTk):
           
     def __init__(self):
         super().__init__()
@@ -409,7 +409,7 @@ class Version2(ctk.CTk):
         self.shift_api = ShiftPaymentAPIClient() 
         self.api_client = APIClient()
         
-# Remove the 'password' key from the original configuration_data for logging
+        # Remove the 'password' key from the original configuration_data for logging
         config_data_without_password = {key: value for key, value in configuration_data.items() if key != 'password'}
 
         # Log the configuration data without the password
@@ -729,7 +729,7 @@ class Version2(ctk.CTk):
 # ----------------------------------------------------------------------------------------------------------
 
     
-# ------------------------------------- Main Frame - Compns - madatory fild  --------------------------------
+# ------------------------------------- Main Frame - Compns - madatory fild  -------------------------------
 
     def create_mandatory_fields_frame(self, parent):
         self.mandatory_frame = ctk.CTkFrame(parent, corner_radius=10, border_width=2)
@@ -937,6 +937,8 @@ class Version2(ctk.CTk):
         popup.update_status("Initializing data validation process... ")        
         popup.update_progress(0)  # Start at 0%
 
+        self.api_client = APIClient()
+
 
         logger.info("Starting data validation process")
         sleep(1)
@@ -1010,7 +1012,7 @@ class Version2(ctk.CTk):
                     data_validated['mylistc'].append(company_valid.dict())
                     company_ids.add(cid)
                     logger.info(f"Validated company: {row.get('Company_Name', 'Unknown')} (ID: {cid})")
-                    popup.show_success(f"Validated company: {row.get('Company_Name', 'Unknown')} (ID: {cid})  ")
+                    popup.show_success(f"Validated company in file : {row.get('Company_Name', 'Unknown')} (ID: {cid})  ")
             except CompanyValidationError as e:
                 error_message = str(e)
                 self.button1.configure(text="Error Validation ❌", fg_color="red")
@@ -1034,7 +1036,7 @@ class Version2(ctk.CTk):
                 participant_valid = Consumer_validation(**row)
                 data_validated['mylistp'].append(participant_valid.dict())
                 logger.info(f"Validated participant: {row.get('Participant_Id', 'Unknown')}")
-                popup.show_success(f"Validated participant: {row.get('Participant_Id', 'Unknown')}")
+                popup.show_success(f"Validated participant in file : {row.get('Participant_Id', 'Unknown')}")
             except ConsumerValidationError as e:
                 error_message = str(e)
                 self.button1.configure(text="Error Validation ❌", fg_color="red")
@@ -1052,7 +1054,7 @@ class Version2(ctk.CTk):
                     return
         popup.update_progress(30)
         sleep(1)
-        self.button1.configure(text="Validation Success ✔️", fg_color="green")
+        self.button1.configure(text="Validation file data success ✔️", fg_color="green")
         self.button2.configure(state="normal")
         self.button1.configure(state="normal")
 
@@ -1062,19 +1064,31 @@ class Version2(ctk.CTk):
         logger.debug(f"Validated companies: {len(data_validated['mylistc'])}")
         logger.debug(f"Validated participants: {len(data_validated['mylistp'])}")
         
+        sleep(2)
         
+        self.button1.configure(text="Checking data with ZR ⏳", state="normal",fg_color='dodgerblue3')
+
+
         popup.update_status(" Checking Company's in System Started . . .   ")
         logger.debug(f"checking company's in progress")
 
         mylistc_data = data_validated['mylistc']
+        mylistp_data = data_validated['mylistp']
+
         timeout = (int(shifts["timeout"])*0.001)
         print(timeout)
         
         #print(mylistc_data)
         #input()
         
+        logger.debug(f"------------------------------------------Validation Started with ZR  ---------------------------------------------")
+
         #-------------------------------------------------------- COMPANY --------------------------------------------------------
         popup.update_progress(40)
+        logger.debug(mylistc_data)
+        print('\n')
+        logger.debug(mylistp_data)
+        
         for rowc in mylistc_data:
             company_id = rowc.get('Company_id')
             company_name = rowc.get('Company_Name')
@@ -1101,20 +1115,74 @@ class Version2(ctk.CTk):
                 except Exception as e:
                     popup.show_error(f"Error creating Company {company_id} -- ERROR : {e}  ")
             
-            popup.update_progress(80)
+        popup.update_progress(80)
         
         popup.show_success(" Checking Company's in System Ended")
         logger.debug(f"Checking Company's in System Ended")
         #-------------------------------------------------------- END COMPANY --------------------------------------------------------
         print("\n")
+        
         #-------------------------------------------------------- PARTICIPANT --------------------------------------------------------
+                
+        popup.update_progress(60)
+               
+        popup.show_success(" Checking Participant in System started...")
+        amount_mandatory = "Amount" in self.mandatory_columns
+        participant_type_mandatory = "Participant_Type" in self.mandatory_columns
+        participant_type = rowp.get('Participant_Type') if participant_type_mandatory else None
+        global glob_vals
+        template_ids = glob_vals
 
+        for rowp in mylistp_data:
+        
+            if not participant_type_mandatory:
+                participant_id = rowp.get('Participant_Id')
+                company_id = rowp.get('Company_id')
 
+                popup.update_status(f"Processing participant: {participant_id} -- Company {company_id} ")
+
+                status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
+
+                if status_code != 404:
+                    popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
+                    logger.success(f"Participant ID {participant_id} found for Company ID {company_id}")
+                    
+                elif status_code == 500: 
+                    popup.show_error(f"An error occurred while making process   ")
+                    logger.error("An error occurred while making process")
+                    
+                
+                    if status_code != 404 or status_code != 500:
+                        popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}  ")
+                        logger.info(f"Creating new participant ID {participant_id} for Company ID {company_id}  \n")            
+                        template_id = template_ids["season_parker"]
+                        sleep(timeout)
+
+                        xml_ptcpt_data = consumer_to_xml(rowp)
+                        status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data.strip())
+
+                        if status_code == 201:
+                            popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}  ")
+                            logger.success(f"Participant ID {participant_id} created successfully for Company ID {company_id} ")
+                        else:
+                            popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}")
+                            logger.error(f"Failed to create Participant ID {participant_id}")
+                
+            
+
+        popup.show_success(" Checking Participant in System Ended...")
         #-------------------------------------------------------- END COMPANY --------------------------------------------------------
+        popup.update_progress(82)
 
-
+        sleep(1)
+        self.button1.configure(text="Checking in ZR complete ✔️", fg_color="green")
         logger.debug(f"------------------------------------------Validation Completed ---------------------------------------------")
         popup.update_progress(100)
+        sleep(1)
+        self.button1.configure(text="Validation Success ✔️", fg_color="green")
+
+
+        popup.show_success(" CHECKING DATA ENDED")
 
         return data_validated['mylistc'], data_validated['mylistp']
  
@@ -1151,44 +1219,7 @@ class Version2(ctk.CTk):
             amount = rowp.get('Amount') if amount_mandatory else None
 
             popup.update_status(f"Processing participant: {participant_id} -- Company {company_id} ")
-
-            if not participant_type_mandatory:
-                
-                #status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
-                #if status_code != 404:
-                #    popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
-                    
-                #elif status_code == 500: 
-                #    popup.show_success(f"An error occurred while making process ")
-                #else:
-
-                status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
-
-                if status_code != 404:
-                    popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}  ")
-                    logger.success(f"Participant ID {participant_id} found for Company ID {company_id}")
-                    
-                elif status_code == 500: 
-                    popup.show_error(f"An error occurred while making process   ")
-                    logger.error("An error occurred while making process")
-                    
-
-                else:
-                    popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}  ")
-                    logger.info(f"Creating new participant ID {participant_id} for Company ID {company_id}  \n")            
-                    template_id = template_ids["season_parker"]
-                    sleep(timeout)
-
-                    xml_ptcpt_data = consumer_to_xml(rowp)
-                    status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data.strip())
-
-                    if status_code == 201:
-                        popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}  ")
-                        logger.success(f"Participant ID {participant_id} created successfully for Company ID {company_id} ")
-                    else:
-                        popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}")
-                        logger.error(f"Failed to create Participant ID {participant_id}")
-
+            
             if participant_type_mandatory:
 
                 if participant_type == 2:
