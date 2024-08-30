@@ -94,6 +94,7 @@ class Version2(ctk.CTk):
             tips_popup = TipsPopup(self)
             tips_popup.grab_set()  
             
+            
     def setup_ui(self):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)

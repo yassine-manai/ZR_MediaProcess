@@ -23,5 +23,5 @@ REM Create the executable with the updated version in the name
 pyinstaller --noconfirm --onefile --console --name Import_Tool_v%new_version%.exe main.py
 
 REM Notify the user
-echo Created Import_Tool_v%new_version%.exe
-pause
+REM echo Created Import_Tool_v%new_version%.exe
+REM pause
