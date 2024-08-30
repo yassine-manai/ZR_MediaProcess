@@ -72,7 +72,7 @@ class Company_validation(BaseModel):
 
 
 class Consumer_validation(BaseModel):
-    
+
     # Mandatory fields
     Participant_Id: int
     Participant_Firstname: str

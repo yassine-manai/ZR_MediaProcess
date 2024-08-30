@@ -170,9 +170,7 @@ class Version2(ctk.CTk):
             return "white"
         if appearance_mode == "Light":
             return "black"
-
     text_color = get_text_color()
-    #print(text_color)
 
 
 # ------------------------------------- Titile Frame ----------------------------------------------------
