@@ -28,13 +28,13 @@ class APIClient:
 
     @handle_api_error
     def create_company(self, data: str) -> Tuple[int, dict]:
-        logger.debug(f"Creating company with data: {data}")
+        logger.debug(f"Creating company with data: \n {data}")
         return make_request("POST", f"{self.url_api}/contracts", data=data)
 
     # Participant Section
     @handle_api_error
     def create_participant(self, company_id: int, template_id: int, data: str) -> Tuple[int, dict]:
-        logger.debug(f"Creating participant for company ID {company_id} with template ID {template_id} ++++++++ {data}")
+        logger.debug(f"Creating participant for company ID {company_id} with template ID {template_id} \n {data}")
         return make_request("POST", f"{self.url_api}/contracts/{company_id}/consumers?templateId={template_id}", data=data)
 
     @handle_api_error
@@ -49,6 +49,7 @@ class APIClient:
     
     @handle_api_error
     def get_cardNumber(self, cardNbr: int) -> Tuple[int, dict]:
+        
         return make_request("GET", f"{self.url_api}/consumers?cardno={cardNbr}")
 
 

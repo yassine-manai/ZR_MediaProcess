@@ -2,10 +2,12 @@ import threading
 from time import sleep
 import tkinter as tk
 from tkinter import StringVar, filedialog, messagebox
+from tkinter.tix import *
 import customtkinter as ctk
 from api.api_media import APIClient
 from api.shift_api import ShiftPaymentAPIClient
 from app.progress_pop import ProcessingPopup
+from app.tips_popup import TipsPopup
 from classes.error_except import CompanyValidationError, ConsumerValidationError
 from classes.validator_class import Company_validation, Consumer_validation
 from config.log_config import logger
@@ -13,15 +15,14 @@ from functions.dict_xml_user import consumer_to_xml, contract_to_xml
 from functions.shift_dict_xml import close_shift_xml, open_shift_xml, topup_pmvc_xml
 from functions.test_connect import test_zr_connection
 from functions.xml_resp_parser import current_shift_response, get_status_code, open_shift_response, processshift
-from globals.global_vars import zr_data, glob_vals, configuration_data
+from globals.global_vars import zr_data, glob_vals, configuration_data, data_validated
 from functions.load_data import read_data_with_header
 
 ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")    
 
 class Version2(ctk.CTk):
-        
-    
+          
     def __init__(self):
         super().__init__()
         self.title("PAYG Import Tool")
@@ -58,12 +59,12 @@ class Version2(ctk.CTk):
             "yyyy/mm/dd": "%Y/%m/%d",
         }     
         self.mandatory_columns = [
-            "Company_id", "Company_Name", "Company_ValidUntil", "Participant_Id",
+            "Company_id", "Company_Name", "Company_ValidFrom", "Company_ValidUntil", "Participant_Id",
             "Participant_Firstname", "Participant_Surname","Participant_CardNumber",
-            "Participant_ValidUntil","Participant_ValidFrom", 
+            "Participant_ValidFrom","Participant_ValidUntil", 
         ]
         self.optional_columns = [
-            "Company_ValidFrom", "Company_Surname", "Company_phone1", "Company_email1",
+            "Company_Surname", "Company_phone1", "Company_email1",
             "Company_Street", "Company_Town","Company_Postbox","Company_FilialId", 
             "Participant_FilialId", "Participant_Type","Participant_Cardclass", 
             "Participant_IdentificationType","Participant_Present", "Participant_Status", 
@@ -71,21 +72,28 @@ class Version2(ctk.CTk):
             "Participant_LPN2", "Participant_LPN3", "Amount"
         ]
         
+        #tool_tip = Balloon(self)
+
        
         self.optional_field_count = 0
         self.optional_fields = []
         self.file_stat = False
-        logger.info("Starting UI in progress . . .")
-
         self.state_popup = True
 
+        logger.info("Starting UI in progress . . .")
+
+
         self.setup_ui()
-        self.after(100, self.open_configuration)
+        self.after(100, self.show_tips_popup)
         
         self.shift_api = ShiftPaymentAPIClient()    
         self.api_client = APIClient()
-        
-        
+            
+    def show_tips_popup(self):
+        if self.state_popup:
+            tips_popup = TipsPopup(self)
+            tips_popup.grab_set()  
+            
     def setup_ui(self):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -108,8 +116,6 @@ class Version2(ctk.CTk):
         # Set the window's position
         self.geometry(f"{window_width}x{window_height}+{x}+{y}")
         
-
-
     def custom_error_dialog(self, title, message):
         dialog = ctk.CTkToplevel()
         dialog.title(title)
@@ -157,7 +163,15 @@ class Version2(ctk.CTk):
 
             return response
 
+    def get_text_color():
+        appearance_mode = ctk.get_appearance_mode()
+        if appearance_mode == "Dark":
+            return "white"
+        if appearance_mode == "Light":
+            return "black"
 
+    text_color = get_text_color()
+    #print(text_color)
 
 
 # ------------------------------------- Titile Frame ----------------------------------------------------
@@ -170,7 +184,7 @@ class Version2(ctk.CTk):
             title_frame,
             text="PAYG Import Tool",
             font=("Arial", 24, "bold"),
-            text_color="white",
+            text_color=self.text_color,
             corner_radius=8
         ).grid(row=0, column=0, sticky="w")
 
@@ -178,13 +192,26 @@ class Version2(ctk.CTk):
             title_frame,
             text=" ✔️Configuration ",
             text_color="black",
+            border_color=self.text_color,
             width=30,
             height=30,
             fg_color="white",
             hover_color=("gray70", "gray30"),
             command=self.open_configuration
         ).grid(row=0, column=2, sticky="e", padx=(0, 10))
-# ------------------------------------- Titile Frame - Compns ----------------------------------------------------def open_configuration(self):
+        
+        ctk.CTkButton(
+            title_frame,
+            text="ⓘ How to use",
+            text_color="black",
+            border_color=self.text_color,
+            width=30,
+            height=30,
+            fg_color="white",
+            hover_color=("gray70", "gray30"),
+            command=self.show_tips_popup
+        ).grid(row=0, column=3, sticky="e", padx=(0, 10))
+# ------------------------------------- Titile Frame - Compns ----------------------------------------------------
     
     def open_configuration(self):
         if hasattr(self, 'config_window') and self.config_window.winfo_exists():
@@ -201,19 +228,21 @@ class Version2(ctk.CTk):
         self.config_window.title("Configuration")
 
         # Get the user's screen size
-        screen_width = self.config_window.winfo_screenwidth()
-        screen_height = self.config_window.winfo_screenheight()
+        #screen_width = self.config_window.winfo_screenwidth()
+        #screen_height = self.config_window.winfo_screenheight()
 
         # Set the window size to 80% of the screen size, for example
-        window_width = int(screen_width * 0.25)
-        window_height = int(screen_height * 0.58)
+        #window_width = int(screen_width * 0.25)
+        #window_height = int(screen_height * 0.58)
 
         # Set the window size and position
-        self.config_window.geometry(f"{window_width}x{window_height}+{int((screen_width - window_width) / 2)}+{int((screen_height - window_height) / 2)}")
+        #self.config_window.geometry(f"{window_width}x{window_height}+{int((screen_width - window_width) / 2)}+{int((screen_height - window_height) / 2)}")
         self.config_window.resizable(False, False)
 
+        #self.config_window.geometry(" W x H")
+        self.config_window.geometry("480x630")
+
         # Center the config window (might be redundant now)
-        self.center_window(self.config_window)
 
         self.create_zr_config()
         self.create_shift_config()
@@ -299,7 +328,7 @@ class Version2(ctk.CTk):
         self.zr_username_entry.grid(row=3, column=2, padx=10, pady=5, sticky="w")
 
         ctk.CTkLabel(self.config_window, text="ZR Password:").grid(row=4, column=1, padx=10, pady=5, sticky="w")
-        self.zr_password_entry = ctk.CTkEntry(self.config_window)
+        self.zr_password_entry = ctk.CTkEntry(self.config_window, show="*")
         self.zr_password_entry.insert(0, "4711")
         self.zr_password_entry.grid(row=4, column=2, padx=10, pady=5, sticky="w")
         
@@ -381,8 +410,12 @@ class Version2(ctk.CTk):
         self.shift_api = ShiftPaymentAPIClient() 
         self.api_client = APIClient()
         
-        logger.info(f"Configuration Saved: {configuration_data} \n ")
-   
+# Remove the 'password' key from the original configuration_data for logging
+        config_data_without_password = {key: value for key, value in configuration_data.items() if key != 'password'}
+
+        # Log the configuration data without the password
+        logger.info(f"Configuration Saved: {config_data_without_password} \n")
+
     def create_blurred_overlay(self):
         self.overlay = ctk.CTkFrame(self, fg_color="gray26")
         self.overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
@@ -423,7 +456,7 @@ class Version2(ctk.CTk):
         
         load_data = {configuration_data['computer_id'],configuration_data['device_id'],configuration_data['cashier_contract_id'],
                     configuration_data['cashier_consumer_id'],configuration_data['shift_id'],configuration_data['zr_ip'],
-                    configuration_data['username'],configuration_data['password'] ,  configuration_data['timeout']}
+                    configuration_data['username'] ,  configuration_data['timeout']}
         
         logger.info('Existing Configuration Data Loaded - - - - ')
         logger.info(f'Existing Configuration Data Loaded - - - - {load_data}')
@@ -515,11 +548,8 @@ class Version2(ctk.CTk):
             self.save_button.configure(state="normal")
         else:
             self.save_button.configure(state="normal")
+
 # -----------------------------------------------------------------------------------------------------
-
-
-
-
 
 
 
@@ -556,9 +586,12 @@ class Version2(ctk.CTk):
         ctk.CTkCheckBox(file_data_frame, text="No Headers", variable=self.no_headers_var).grid(row=1, column=8, padx=5, pady=(5, 5))
 
         self.pmvc_var = tk.BooleanVar(value=False)
-        ctk.CTkCheckBox(file_data_frame, text="PMVC Topup", variable=self.pmvc_var).grid(row=1, column=9, padx=5, pady=(5, 5))
+        pmvc_check = ctk.CTkCheckBox(file_data_frame, text="PMVC Topup", variable=self.pmvc_var).grid(row=1, column=9, padx=5, pady=(5, 5))
         self.pmvc_var.trace_add('write', self.update_columns)
-
+        
+        #tool_tip = Balloon(file_data_frame)
+        #tool_tip.bind(pmvc_check, "Check this box if you want to include PMVC Topup")
+        
         # Template ID section
         #ctk.CTkLabel(file_data_frame, text="Template ID:", font=("Arial", 14, "bold")).grid(row=2, column=0, padx=(10, 5), pady=(5, 5), sticky="w")
 
@@ -585,7 +618,7 @@ class Version2(ctk.CTk):
         self.date_format_var = StringVar(value="yyyy-mm-dd")
         ctk.CTkOptionMenu(file_data_frame, variable=self.date_format_var, values=list(self.date_format_dict.keys()), width=150, command=self.update_date_format).grid(row=2, column=8, columnspan=2, padx=5, pady=5, sticky="w")
 
-        self.load_data_button = ctk.CTkButton(file_data_frame, text="Load Data ", command=self.load_file_data, state="disabled")
+        self.load_data_button = ctk.CTkButton(file_data_frame, text="Load Data ", hover = None, command=self.load_file_data, state="disabled")
         self.load_data_button.grid(row=3, column=0, columnspan=10, padx=10, pady=(15, 10), sticky="ew")
 
     def update_date_format(self, selected_format):
@@ -750,23 +783,16 @@ class Version2(ctk.CTk):
 
     def update_columns(self, *args):
         pmvc_fields = ["Amount", "Participant_Type"]
-        
+
         if self.pmvc_var.get():
-            # Move from optional to mandatory
-            for field in pmvc_fields:
-                if field in self.optional_columns:
-                    self.optional_columns.remove(field)
-                if field not in self.mandatory_columns:
-                    self.mandatory_columns.append(field)
-                    
-        if not self.pmvc_var.get():
-            # Move from mandatory to optional
-            for field in pmvc_fields:
-                if field in self.mandatory_columns:
-                    self.mandatory_columns.remove(field)
-                if field not in self.optional_columns:
-                    self.optional_columns.append(field)
-        
+            # Move fields to mandatory, ensuring they are not duplicated
+            self.mandatory_columns.extend([field for field in pmvc_fields if field not in self.mandatory_columns])
+            self.optional_columns = [field for field in self.optional_columns if field not in pmvc_fields]
+        else:
+            # Move fields to optional, ensuring they are not duplicated
+            self.optional_columns.extend([field for field in pmvc_fields if field not in self.optional_columns])
+            self.mandatory_columns = [field for field in self.mandatory_columns if field not in pmvc_fields]
+
         self.update_mandatory_fields()
         self.update_optional_fields_dropdown()  
         self.load_file_data()
@@ -781,7 +807,7 @@ class Version2(ctk.CTk):
         self.optional_frame.grid(row=0, column=0, padx=10, pady=(390, 40), sticky="new")
         self.optional_frame.grid_columnconfigure((1, 2, 3, 4), weight=1)
 
-        ctk.CTkLabel(self.optional_frame, text="Optional Fields Selections", font=("Arial", 18, "bold")).grid(row=0, column=0, columnspan=10, pady=(10,10), sticky="news")
+        ctk.CTkLabel(self.optional_frame, text="Optional Fields Selections", font=("Arial", 18, "bold")).grid(row=0, columnspan=10, padx=10,  pady=(10,10), sticky="news")
 
         # Field label and dropdown
         ctk.CTkLabel(self.optional_frame, text="Field:",anchor="w").grid(row=1, column=0, padx=5, pady=5, sticky="nw")
@@ -874,7 +900,7 @@ class Version2(ctk.CTk):
 
     def update_frame_size(self):
         if self.optional_fields:
-            total_height = sum(frame.winfo_reqheight() for _, _, frame in self.optional_fields)
+            total_height = sum(frame.winfo_reqheight() for _, _, _, frame in self.optional_fields)
             self.optional_fields_container.configure(height=max(30, total_height))  
         else:
             self.optional_fields_container.configure(height=30) 
@@ -903,44 +929,49 @@ class Version2(ctk.CTk):
         self.button2.grid(row=0, column=2, padx=5, pady=10)
         
     def validating_data(self):
-                    
-        self.button1.configure(text=f"Validating data ⏳", state="normal")
+        global data_validated, configuration_data   
+        shifts = configuration_data
 
-        
+        self.button1.configure(text="Validating data ⏳", state="normal")
+
         popup = ProcessingPopup(self)
-        popup.update_status("Initializing... \n ")
+        popup.update_status("Initializing data validation process... ")        
+        popup.update_progress(0)  # Start at 0%
 
 
-        
-        
+        logger.info("Starting data validation process")
         sleep(1)
         
         header_state = self.no_headers_var.get()
-        popup.update_status(f"Header State: {header_state}")
+        popup.update_status(f"Header State: {'No Headers' if header_state else 'Headers Present'}  ")
+        logger.debug(f"Header State: {header_state}")
 
         file_path = self.path_entry.get()
-        popup.update_status("Reading CSV file...")
-        
-        sleep(1)
+        popup.update_status("Reading CSV file...  ")
+        logger.info(f"Attempting to read CSV file: {file_path}")
+        popup.update_progress(10)  # Start at 0%
 
+        sleep(1)
 
         try:
             file_data = read_data_with_header(file_path, header_state)
-            logger.debug(file_data)
-            popup.show_success("CSV file read successfully")
+            logger.debug(f"CSV data read successfully. First few rows: {file_data[:5]}")
+            popup.show_success("CSV file read successfully  ")
+            popup.update_progress(15)  # Start at 0%
         except Exception as e:
-            self.button1.configure(text=f"Error Reading File ❌", fg_color="red")
-            logger.error(f"Validation Data Failed")
+            self.button1.configure(text="Error Reading File ❌", fg_color="red")
+            logger.error(f"Failed to read CSV file: {str(e)}")
             
             self.config_window.after(2000, lambda: self.button1.configure(text="Retry Process", fg_color='dodgerblue3', state="normal"))
             
-            popup.show_error(f"Failed to read CSV file: {e}")
+            popup.show_error(f"Failed to read CSV file: {str(e)}  ")
             popup.enable_ok_button()
             return
 
-        popup.update_status("Processing selected fields...")
+        popup.update_status("Processing selected fields...   \n")
+        logger.info("Mapping selected fields to data columns")
         mymappingdict = {}
-
+        popup.update_progress(20)
         sleep(1)
         
         for label, dropdown in self.dropdowns:
@@ -950,104 +981,152 @@ class Version2(ctk.CTk):
                 mymappingdict[label] = "NOSELECTED"
 
         for name, header in self.optional_fields:
-            logger.debug(f"Optional fields : {self.optional_fields}")
+            logger.debug(f"Optional field mapping: {name} -> {header}")
             mymappingdict[name] = header
 
-        popup.update_status("Extracting data from selected fields...")
+        popup.update_status("Extracting data from selected fields...   \n")
+        logger.info("Extracting data based on field mapping")
         
-        print("\n --------------------- GET DATA FROM SELECT FIELDS -------------------- ")
-        
-        data_rows=list()
-        for row in file_data: # run on each row
-            newdict=dict()
-            for k,v in mymappingdict.items(): # run on eaych k,v
-                newdict[k]=row.get(v,'ERROR')
-                #print(k,v)
+        data_rows = []
+        for row in file_data:
+            newdict = {k: row.get(v, 'ERROR') for k, v in mymappingdict.items()}
             data_rows.append(newdict)
-            logger.debug(newdict)
-            
-        print('** ** ** **')
-        logger.debug(data_rows)
+            logger.debug(f"Processed row: {newdict}")
         
-        print("\n================================")
-        
-        logger.debug(f"My mapping dict : {mymappingdict}")
+        logger.debug(f"Total rows processed: {len(data_rows)}")
+        logger.debug(f"Field mapping: {mymappingdict}")
 
-        popup.update_status("Validating data...")
-
+        popup.update_status("Validating data...  ")
+        logger.info("Starting data validation for companies and participants")
 
         sleep(1)
 
-        mylistc = []
-        mylistp = []
-            
+        company_ids = set()
         for row in data_rows:
+            # Company validation
             try:
                 company_valid = Company_validation(**row)
-                mylistc.append(company_valid.dict())
-                popup.show_success(f"Validated company: {row.get('Company_Name', 'Unknown')} ------ {row.get('Company_id', 'Unknown')}")
-            
+                cid = row.get('Company_id')
+                if cid not in company_ids:
+                    data_validated['mylistc'].append(company_valid.dict())
+                    company_ids.add(cid)
+                    logger.info(f"Validated company: {row.get('Company_Name', 'Unknown')} (ID: {cid})")
+                    popup.show_success(f"Validated company: {row.get('Company_Name', 'Unknown')} (ID: {cid})  ")
             except CompanyValidationError as e:
                 error_message = str(e)
-                self.button1.configure(text=f"Error Validation ❌", fg_color="red")
-                logger.error(f"Validation Data Failed")
+                self.button1.configure(text="Error Validation ❌", fg_color="red")
+                logger.error(f"Company validation failed: {error_message}")
                 self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
                 self.button2.configure(state="normal")
 
                 popup.destroy()
                 response = self.custom_retry_continue_dialog(
                     "Company Data Validation",
-                    f"Validation failed: {error_message}\n Do you want to retry or continue?"
+                    f"Validation failed: {error_message}\nDo you want to retry or exit?"
                 )
                 if response == "exit":
                     popup.destroy()
                     return
-                
+            except Exception as e:
+                logger.error(f'Unexpected error during company validation: {str(e)}')
 
+            # Participant validation
             try:
-                particpant_valid = Consumer_validation(**row)
-                mylistp.append(particpant_valid.dict())
+                participant_valid = Consumer_validation(**row)
+                data_validated['mylistp'].append(participant_valid.dict())
+                logger.info(f"Validated participant: {row.get('Participant_Id', 'Unknown')}")
                 popup.show_success(f"Validated participant: {row.get('Participant_Id', 'Unknown')}")
-            
             except ConsumerValidationError as e:
                 error_message = str(e)
-                
-                self.button1.configure(text=f"Error Validation ❌", fg_color="red")
+                self.button1.configure(text="Error Validation ❌", fg_color="red")
                 self.button2.configure(state="normal")
-                logger.error(f"Validation Data Failed")
-                
+                logger.error(f"Consumer validation failed: {error_message}")
                 self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
 
                 popup.destroy()
                 response = self.custom_retry_continue_dialog(
                     "Consumer Data Validation",
-                    f"Validation failed: {error_message}\nDo you want to retry or continue?"
+                    f"Validation failed: {error_message}\nDo you want to retry or exit?"
                 )
                 if response == "exit":
                     popup.destroy()
                     return
-        
+        popup.update_progress(30)
         sleep(1)
-        self.button1.configure(text=f"  Validation Success ✔️", fg_color="green")
+        self.button1.configure(text="Validation Success ✔️", fg_color="green")
         self.button2.configure(state="normal")
         self.button1.configure(state="normal")
 
-        logger.success(f"Validation Data Success")
-        popup.show_success(f"Data Validation Success")
-        #popup.destroy()
+        logger.info("Data validation completed successfully")
+        popup.show_success("Data Validation Success ")
         
-        logger.debug(f" Validated cpm list {mylistc}")
-        print("\n")
-        logger.debug(f" Validated ptcpt list {mylistp}")
+        logger.debug(f"Validated companies: {len(data_validated['mylistc'])}")
+        logger.debug(f"Validated participants: {len(data_validated['mylistp'])}")
+        
+        
+        popup.update_status(" Checking Company's in System Started . . .   ")
+        logger.debug(f"checking company's in progress")
 
-        return mylistc, mylistp
+        mylistc_data = data_validated['mylistc']
+        timeout = (int(shifts["timeout"])*0.001)
+        print(timeout)
         
+        #print(mylistc_data)
+        #input()
+        
+        #-------------------------------------------------------- COMPANY --------------------------------------------------------
+        popup.update_progress(40)
+        for rowc in mylistc_data:
+            company_id = rowc.get('Company_id')
+            company_name = rowc.get('Company_Name')
+            popup.update_status(f"Processing company: {company_name}  ")
+                
+            status_code, company_details = self.api_client.get_company_details(company_id)
+            logger.debug(f"Company details {company_name} - {company_id}: {company_details}")
             
+            sleep(timeout)
+            
+            if status_code != 404:
+                popup.show_success(f"Company ID {company_id} found  ")
+                
+            else:
+                popup.show_error(f"Company ID {company_id} not found. Creating new company...  ")
+                try:
+                    xml_comp_data = contract_to_xml(rowc)
+                    status_code, result = self.api_client.create_company(xml_comp_data)
+                    
+                    if status_code == 201:
+                        popup.show_success(f"Company ID {company_id} created successfully  ")
+                    else:
+                        popup.show_error(f"Failed to create Company ID {company_id}. Status code: {status_code}  ")
+                except Exception as e:
+                    popup.show_error(f"Error creating Company {company_id} -- ERROR : {e}  ")
+            
+            popup.update_progress(80)
+        
+        popup.show_success(" Checking Company's in System Ended")
+        logger.debug(f"Checking Company's in System Ended")
+        #-------------------------------------------------------- END COMPANY --------------------------------------------------------
+        print("\n")
+        #-------------------------------------------------------- PARTICIPANT --------------------------------------------------------
+
+
+        #-------------------------------------------------------- END COMPANY --------------------------------------------------------
+
+
+        logger.debug(f"------------------------------------------Validation Completed ---------------------------------------------")
+        popup.update_progress(100)
+
+        return data_validated['mylistc'], data_validated['mylistp']
+ 
     def main_process(self):
-        global glob_vals, configuration_data
+        global glob_vals, configuration_data, data_validated
         template_ids = glob_vals
         shifts = configuration_data
         
+        #mylistc_data = data_validated['mylistc']
+        mylistp_data = data_validated['mylistp']
+
         self.button2.configure(text=f"Processing ⏳", state="normal")
 
         timeout = (int(shifts["timeout"])*0.001)
@@ -1056,59 +1135,48 @@ class Version2(ctk.CTk):
         self.api_client = APIClient()
 
         popup = ProcessingPopup(self)
-        popup.update_status(f"Starting API Calls with timeout {timeout}...")
+        popup.update_status(f"Starting API Calls with timeout {timeout}...   ")
         logger.debug(f"Starting API Calls with timeout {timeout}")
 
-        mylistc, mylistp = self.validating_data()
-        
-        popup.update_status("Processing companies ... \n ")
-        for rowc in mylistc:
-            company_id = rowc.get('Company_id')
-            company_name = rowc.get('Company_Name')
-            popup.update_status(f"Processing company: {company_name} \n ")
-                
-            status_code, company_details = self.api_client.get_company_details(company_id)
-            logger.debug(f"Company details {company_name} - {company_id}: {company_details}")
-            
-            sleep(timeout)
-            
-            if status_code != 404:
-                popup.show_success(f"Company ID {company_id} found")
-            else:
-                popup.show_error(f"Company ID {company_id} not found. Creating new company...")
-                try:
-                    xml_comp_data = contract_to_xml(rowc)
-                    status_code, result = self.api_client.create_company(xml_comp_data)
-                    if status_code == 201:
-                        popup.show_success(f"Company ID {company_id} created successfully")
-                    else:
-                        popup.show_error(f"Failed to create Company ID {company_id}. Status code: {status_code}")
-                except Exception as e:
-                    popup.show_error(f"Error creating Company {company_id}: {e}")
 
 
-
-        popup.update_status("Processing participants... \n ")
+        popup.update_status("Processing participants in progress ...  ")
         
         amount_mandatory = "Amount" in self.mandatory_columns
         participant_type_mandatory = "Participant_Type" in self.mandatory_columns
 
-        for rowp in mylistp:
+        for rowp in mylistp_data:
             participant_id = rowp.get('Participant_Id')
             company_id = rowp.get('Company_id')
             participant_type = rowp.get('Participant_Type') if participant_type_mandatory else None
             amount = rowp.get('Amount') if amount_mandatory else None
 
-            popup.update_status(f"Processing participant: {participant_id}")
+            popup.update_status(f"Processing participant: {participant_id} -- Company {company_id} ")
 
             if not participant_type_mandatory:
+                
+                #status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
+                #if status_code != 404:
+                #    popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
+                    
+                #elif status_code == 500: 
+                #    popup.show_success(f"An error occurred while making process ")
+                #else:
 
                 status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
 
                 if status_code != 404:
-                    popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
+                    popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}  ")
+                    logger.success(f"Participant ID {participant_id} found for Company ID {company_id}")
+                    
+                elif status_code == 500: 
+                    popup.show_error(f"An error occurred while making process   ")
+                    logger.error("An error occurred while making process")
+                    
+
                 else:
-                    popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
+                    popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}  ")
+                    logger.info(f"Creating new participant ID {participant_id} for Company ID {company_id}  \n")            
                     template_id = template_ids["season_parker"]
                     sleep(timeout)
 
@@ -1116,9 +1184,11 @@ class Version2(ctk.CTk):
                     status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data.strip())
 
                     if status_code == 201:
-                        popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
+                        popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}  ")
+                        logger.success(f"Participant ID {participant_id} created successfully for Company ID {company_id} ")
                     else:
-                        popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
+                        popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}")
+                        logger.error(f"Failed to create Participant ID {participant_id}")
 
             if participant_type_mandatory:
 
@@ -1127,8 +1197,10 @@ class Version2(ctk.CTk):
 
                     if status_code != 404:
                         popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
+                        logger.success(f"Participant ID {participant_id} found for Company ID {company_id}")
                     else:
                         popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}")
+                        logger.info(f"Creating new participant ID {participant_id} for Company ID {company_id}")
                         template_id = template_ids["season_parker"]
 
                         sleep(timeout)
@@ -1138,6 +1210,8 @@ class Version2(ctk.CTk):
 
                         if status_code == 201:
                             popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}")
+                            logger.success(f"Creating new participant ID {participant_id} for Company ID {company_id}")
+
                         else:
                             popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
 
@@ -1199,12 +1273,16 @@ class Version2(ctk.CTk):
 
                             if status_code_tp == 200 or status_code_tp == 201:
                                 popup.show_success("TOPUP completed successfully")
+                                logger.success(f"TOPUP completed successfully for participant {participant_id} -- Company {company_id}") 
+                                
+                                
                             else:
-                                popup.show_error(f"TOPUP failed. Status code: {status_code_tp}")
+                                popup.show_error(f"Error Occured . . .")
+                                logger.error(f"TOPUP failed. Status code: {status_code_tp}") 
                                 continue
 
                         elif int(money_balance) == 0:
-                            popup.show_error("Topup amount is 0, Skipping transaction")
+                            popup.show_success("Topup amount is 0 for participant ")
                             continue
                     else:
                         popup.update_status("Processing PMVC participant without topup.")
@@ -1233,7 +1311,6 @@ class Version2(ctk.CTk):
 
         popup.enable_ok_button()       
 # -----------------------------------------------------------------------------------------------------------------
-
 
 
 
@@ -1300,25 +1377,34 @@ class Version2(ctk.CTk):
 # -----------------------------------------------------------------------------------------------------------------
         
 
-    
-    
-    
+   
     
 # ------------------------------- Footer Frame -----------------------------------------
+
     def create_footer_frame(self):
+        self.version = self.get_version()
+        
         footer_frame = ctk.CTkFrame(self, fg_color="transparent")
         footer_frame.grid(row=2, column=0, sticky="ew")
         footer_frame.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(footer_frame, text="Version 1.2.1 BETA", text_color="white", corner_radius=8).grid(row=0, column=0, sticky="e")
-        ctk.CTkLabel(footer_frame, text="Asteroidea © 2024", text_color="white", corner_radius=8).grid(row=0, column=0, sticky="w")   
+        ctk.CTkLabel(footer_frame, text=f"Version {self.version} BETA", text_color=self.text_color, corner_radius=8).grid(row=0, column=0, sticky="e")
+        ctk.CTkLabel(footer_frame, text="Asteroidea © 2024", text_color=self.text_color, corner_radius=8).grid(row=0, column=0, sticky="w")   
         
-        link_button = ctk.CTkButton(footer_frame, text="Asteroidea © 2024", fg_color="transparent", text_color="white",hover_color=("gray70", "gray30"), border_width=0, cursor="hand2", command=self.open_link)
+        link_button = ctk.CTkButton(footer_frame, text="Asteroidea © 2024", fg_color="transparent", text_color=self.text_color, hover_color=("gray70", "gray30"), border_width=0, cursor="hand2", command=self.open_link)
         link_button.grid(row=0, column=0, sticky="w") 
         
     def open_link(self):
         import webbrowser
         webbrowser.open("https://asteroidea.co/")  
+        
+    def get_version(self):
+            try:
+                with open('version.txt', 'r') as file:
+                    version = file.read().strip()
+                return version
+            except FileNotFoundError:
+                return "1.2.6"    
 # --------------------------------------------------------------------------------------
 
 

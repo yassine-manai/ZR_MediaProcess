@@ -1,13 +1,245 @@
-clear log -- rmv password 
 
+
+---------------------- TO DO -------------------
+clear log -- 
 remv console -- build 
-
 buttons enhance -- 
-
-enhancement -- tips 
-
-version ml version - txt
-
 close shift 
+txt -- btns 
+valdiation company exist or not store date --- 
+the optional fields enhancemnet order 
 
-card nbr --- optional if no card selected 
+
+
+
+---------------------- DONE --------------------------
+password hidden
+company unique 
+rmv password  - log
+version ml version - txt
+enhancement -- tips 
+checking company in valdiation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------    ----------------------------------------------------------------
+
+Steps one page 
+
+import customtkinter as ctk
+
+class TipsPopup(ctk.CTkToplevel):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.title("Tips and Instructions")
+        self.geometry("600x400")
+        self.resizable(False, False)
+        
+        self.create_blurred_overlay()
+        
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        
+        main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        main_frame.grid_columnconfigure(0, weight=1)
+        main_frame.grid_rowconfigure(1, weight=1)
+        
+        title_label = ctk.CTkLabel(main_frame, text="Welcome to PAYG Import Tool", font=("Arial", 18, "bold"))
+        title_label.grid(row=0, column=0, pady=(0, 10))
+        
+        tips_text = ctk.CTkTextbox(main_frame, width=560, height=250, fg_color="transparent")
+        tips_text.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="nsew")
+        tips_text.insert("1.0", """
+Tips and Instructions:
+
+    1. This tool helps you import PAYG (Pay As You Go) data.
+    2. Ensure your input file is in the correct format (CSV, Excel, etc.).
+    3. Mandatory columns include Company_id, Company_Name, Participant_Id, etc.
+    4. Optional columns are available for additional information.
+    5. Use the configuration screen to set up your import preferences.
+    6. Always verify your data before final import.
+    7. The Amount Value should be without (,) or (.) or any special character
+
+
+Enjoy using the PAYG Import Tool!
+        """)
+        tips_text.configure(state="disabled")
+        
+        self.agree_var = ctk.BooleanVar()
+        self.agree_checkbox = ctk.CTkCheckBox(main_frame, text="I have read and understood the instructions", variable=self.agree_var, command=self.update_button)
+        self.agree_checkbox.grid(row=2, column=0, pady=(0, 10))
+        
+        self.continue_button = ctk.CTkButton(main_frame, text="Continue", command=self.on_continue)
+        self.continue_button.grid(row=3, column=0, pady=(0, 10))
+        
+    def update_button(self):
+        if self.agree_var.get():
+            self.continue_button.configure(text="Continue", fg_color=["#3a7ebf", "#1f538d"])  # Default blue color
+        else:
+            self.continue_button.configure(text="Please agree to the instructions", fg_color="red")
+    
+    def on_continue(self):
+        if self.agree_var.get():
+            self.destroy()
+            self.master.open_configuration()
+        else:
+            self.continue_button.configure(text="Please agree to the instructions", fg_color="red")
+
+    def create_blurred_overlay(self):
+        self.overlay = ctk.CTkFrame(self, fg_color="gray26")
+        self.overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.overlay.configure(corner_radius=0)
+
+
+
+****
+import customtkinter as ctk
+from PIL import Image, ImageTk
+
+class TipsPopup(ctk.CTkToplevel):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.title("Tips and Instructions")
+        self.geometry("800x500")  # Increased size for larger content
+        self.resizable(False, False)
+
+        self.create_blurred_overlay()
+
+        self.steps = [
+            "Step 1: Launch the application and review these instructions.",
+            "Step 2: Click on Configuration' to config and check connection to ZR server and save it ",
+            "Step 3: Click on 'Open File' to select your PAYG data file (CSV or Excel format).",
+            "Step 3: Check if your date",
+
+            "Step 3: Verify that all mandatory columns are present in your file.",
+            "Step 4: Use the configuration screen to map your file columns to the required fields.",
+            "Step 5: Set any necessary import preferences, such as date formats or decimal separators.",
+            "Step 6: Click 'Validate Data' to check for any errors or inconsistencies.",
+            "Step 7: Review the validation results and make any necessary corrections to your data.",
+            "Step 8: Once validation is successful, click 'Import Data' to begin the import process.",
+            "Step 9: Monitor the import progress and wait for the completion message.",
+            "Step 10: After import, verify the imported data in the system to ensure accuracy."
+        ]
+        self.current_step = 0
+        
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+        main_frame.grid_columnconfigure(0, weight=1)
+        main_frame.grid_rowconfigure(1, weight=1)
+
+        self.title_label = ctk.CTkLabel(main_frame, text="Welcome to PAYG Import Tool", font=("Arial", 18, "bold"))
+        self.title_label.grid(row=0, column=0, pady=(0, 10))
+
+        # Increase the font size for instructions
+        self.tips_label = ctk.CTkLabel(main_frame, text=self.steps[self.current_step], wraplength=660, font=("Arial", 25))
+        self.tips_label.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="nsew")
+
+        # Remove the image label
+        self.image_label = ctk.CTkLabel(main_frame)
+        self.image_label.grid_forget()  # Remove image label from the layout
+
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.grid(row=2, column=0, pady=(0, 10))
+        button_frame.grid_columnconfigure((0, 1), weight=1)
+
+        self.prev_button = ctk.CTkButton(button_frame, text="Previous", command=self.on_prev, state="disabled")
+        self.prev_button.grid(row=0, column=0, padx=(0, 10))
+
+        self.next_button = ctk.CTkButton(button_frame, text="Next", command=self.on_next)
+        self.next_button.grid(row=0, column=1, padx=(10, 10))
+
+        self.continue_button = ctk.CTkButton(button_frame, text="Continue", command=self.on_continue)
+        self.continue_button.grid(row=0, column=1, padx=(10, 10))  # Initially in the same spot as 'Next'
+
+        # Initial update to set correct button states
+        self.update_step()
+
+    def update_buttons(self):
+        if self.current_step == len(self.steps) - 1:
+            if self.agree_var.get():
+                self.continue_button.configure(state="normal", fg_color=["#3a7ebf", "#1f538d"])
+            else:
+                self.continue_button.configure(state="disabled", fg_color=["#3a7ebf", "#1f538d"])
+        else:
+            self.continue_button.configure(state="disabled", fg_color=["#3a7ebf", "#1f538d"])
+
+    def on_next(self):
+        if self.current_step < len(self.steps) - 1:
+            self.current_step += 1
+            self.update_step()
+
+    def on_prev(self):
+        if self.current_step > 0:
+            self.current_step -= 1
+            self.update_step()
+
+    def update_step(self):
+        self.tips_label.configure(text=self.steps[self.current_step])
+
+        # Remove image handling
+        self.image_label.configure(image=None)
+
+        self.prev_button.configure(state="normal" if self.current_step > 0 else "disabled")
+        
+        if self.current_step == len(self.steps) - 1:
+            self.next_button.grid_forget()  # Remove 'Next' button on last step
+            self.continue_button.grid(row=0, column=0, padx=(0, 10))  # Place 'Continue' button in the spot of 'Next'
+        else:
+            self.next_button.grid(row=0, column=1, padx=(10, 10))  # Restore 'Next' button placement
+            self.continue_button.grid_forget()  # Hide 'Continue' button on other steps
+
+    def on_continue(self):
+        self.destroy()
+        self.master.open_configuration()
+
+    def create_blurred_overlay(self):
+        self.overlay = ctk.CTkFrame(self, fg_color="gray26")
+        self.overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
+        self.overlay.configure(corner_radius=0)
+
+    def on_skip(self):
+        self.destroy()
+        self.master.open_configuration()
+
+
+
+
+
+

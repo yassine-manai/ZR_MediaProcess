@@ -48,3 +48,9 @@ configuration_data  : dict = {
 
 
 
+data_validated : dict = {
+    'mylistc': [],
+    'mylistp': []
+}
+
+

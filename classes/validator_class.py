@@ -51,8 +51,9 @@ class Company_validation(BaseModel):
     
     @field_validator('Company_Name')
     def check_no_special_characters(cls, value):
-        if not re.match(r'^[a-zA-Z]+$', value):
-            raise ConsumerValidationError(f"The field {cls.__name__} cannot contain special characters.")
+        if not re.match(r'^[a-zA-Z0-9 ]+$', value): # numbers can be included
+            logger.error(f"The field Company_Name cannot contain special characters. value:#{value}#")
+            raise ConsumerValidationError(f"The field Company_Name cannot contain special characters. value:#{value}#") # bette error message
         return value
     
     
@@ -101,6 +102,7 @@ class Consumer_validation(BaseModel):
     def validate_positive_data(cls, value, info):
         value = int(value)
         if value < 1 or value > 99999:
+            logger.error(f" Value {value}  out of range for {info.field_name}. Must be between 1 and 99999.")
             raise ConsumerValidationError(f" Value {value}  out of range for {info.field_name}. Must be between 1 and 99999.")
         return value
 
@@ -117,6 +119,7 @@ class Consumer_validation(BaseModel):
                 return date_obj.strftime("%Y-%m-%d")
             
             except ValueError:
+                logger.error(f"Invalid value #{value}# format for {info.field_name}. \n Data values in CSV file must be in selected format : {init_format}\n Check your file or check your selected Date fromat ")
                 raise CompanyValidationError(f"Invalid date format for {info.field_name}. \n Data values in CSV file must be in selected format : {init_format}\n Check your file or check your selected Date fromat ")
             
         return value
@@ -126,13 +129,15 @@ class Consumer_validation(BaseModel):
         mandatory_fields = ['Participant_Id','Participant_ValidUntil','Participant_ValidFrom', 'Company_id']
         for field in mandatory_fields:
             if not values.get(field):
-                raise ConsumerValidationError(f"The field {field} is mandatory and cannot be empty.")
+                logger.error(f'Validation failed  {field} is mandatory')
+                raise ConsumerValidationError(f"The field {field} is mandatory and cannot be empty")
         return values
     
     @field_validator('Participant_Firstname', 'Participant_Surname')
     def check_no_special_characters(cls, value):
-        if not re.match(r'^[a-zA-Z]+$', value):
-            raise ConsumerValidationError(f"The field {cls.__name__} cannot contain special characters.")
+        if not re.match(r'^[a-zA-Z0-9 ]+$', value):
+            logger.error(f'The field {cls.__name__} cannot contain special characters. value:#{value}#')
+            raise ConsumerValidationError(f"The field {cls.__name__} cannot contain special characters value:#{value}# ")
         return value
     
     
@@ -160,7 +165,7 @@ class Consumer_validation(BaseModel):
             valid_until_date = datetime.strptime(valid_until, init_format)
             
             if valid_from_date > valid_until_date:
-                raise ConsumerValidationError("Participant_ValidFrom must be earlier than Participant_ValidUntil.")
+                raise ConsumerValidationError(f"Participant_ValidFrom must be earlier than Participant_ValidUntil ")
         
         return values
     
@@ -176,41 +181,17 @@ class Consumer_validation(BaseModel):
             raise ConsumerValidationError(f"Invalid value {int_value} for Participant_Type. Must be 2 or 6.")
         
         return int_value
-    
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
   
     
-"""     @field_validator('Amount', mode='before')
-    def validate_amount(cls, value: str) -> int:
-        try:
-            int_value = int(value)
-        except ValueError:
-            raise ConsumerValidationError("Participant_Type must be a valid integer.")
+    @field_validator('Amount', mode='before')
+    def validate_amount(cls, value: str) -> str:
+
+        cleaned_value = re.sub(r'[^\d]', '', value)
         
-        # Ensure the integer value is either 2 or 6
-        if int_value == 0:
-            raise ConsumerValidationError(f"Money valu")
+        if not cleaned_value.isdigit():
+            raise ConsumerValidationError(msg="Amount must be a valid integer.")
         
-        return int_value """
-    
+        return value 
     
     
