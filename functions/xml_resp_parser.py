@@ -1,3 +1,4 @@
+from collections import defaultdict
 import xml.etree.ElementTree as ET
 
 
@@ -132,5 +133,58 @@ def get_status_code(response: dict) -> int:
     except ET.ParseError:
         return 500
 
-# --------------------------------------------------- PAYMENTS PARSER --------------------------------
-# TOPUP PMVC REPONSE PARSER 
+# --------------------------------------------------- TEMPLATES PARSER --------------------------------
+
+
+
+def parse_templates_company(response):
+    # Extract the XML content from the response
+    xml_content = response.get('content', '')
+
+    # Parse the XML content
+    root = ET.fromstring(xml_content)
+
+    # Extract the namespace from the root tag
+    namespace = {'ns': root.tag.split('}')[0].strip('{')}
+
+    # Initialize a list to store the templates
+    templates = []
+
+    # Iterate through each <template> element and extract the ID and name
+    for template in root.findall('ns:template', namespace):
+        template_id = template.find('ns:id', namespace).text
+        template_name = template.find('ns:name', namespace).text
+        templates.append({'id': template_id, 'name': template_name})
+
+    return templates
+
+
+
+
+def parse_template_consumer(response):
+    # Extract the XML content from the response
+    xml_content = response.get('content', '')
+
+    # Parse the XML content
+    root = ET.fromstring(xml_content)
+
+    # Extract the namespace from the root tag
+    namespace = {'ns': root.tag.split('}')[0].strip('{')}
+
+    # Initialize a dictionary to store the templates, allowing for multiple IDs per name
+    templates = defaultdict(list)
+
+    # Iterate through each <template> element and extract the ID and name
+    for template in root.findall('ns:template', namespace):
+        template_id = template.find('ns:id', namespace).text
+        template_name = template.find('ns:name', namespace).text
+        templates[template_name].append(template_id)
+
+    # Convert defaultdict to a regular dict before returning
+    return dict(templates)
+
+
+
+                #self.template1_var = StringVar(value="3")
+        #self.template2_var = StringVar(value="100")
+        #self.template3_var = StringVar(value="2")

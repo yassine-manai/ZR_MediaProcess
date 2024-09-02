@@ -63,3 +63,16 @@ class APIClient:
     def get_company_version(self) -> Tuple[int, dict]:
         logger.debug(f"Retrieving company version from {self.url_api}")
         return make_request("GET", f"{self.url_api}/version")
+
+
+
+    # TEMPLATES API - SECTION
+    @handle_api_error
+    def get_company_templates(self) -> Tuple[int, dict]:
+        logger.debug(f"Retrieving Templates Company from {self.url_api}")
+        return make_request("GET", f"{self.url_api}/templates/contracts")
+    
+    @handle_api_error
+    def get_consumer_templates(self) -> Tuple[int, dict]:
+        logger.debug(f"Retrieving Templates Consumers from {self.url_api}")
+        return make_request("GET", f"{self.url_api}/templates/consumers")

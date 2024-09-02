@@ -7,9 +7,9 @@ buttons enhance --
 close shift 
 txt -- btns 
 the optional fields enhancemnet order 
+the template check in data load
 
 
-* * * dash * * * 
 
 
 ---------------------- DONE --------------------------

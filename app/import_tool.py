@@ -11,11 +11,11 @@ from app.tips_popup import TipsPopup
 from classes.error_except import CompanyValidationError, ConsumerValidationError
 from classes.validator_class import Company_validation, Consumer_validation
 from config.log_config import logger
-from functions.dict_xml_user import consumer_to_xml, contract_to_xml
+from functions.dict_xml_user import consumer_to_xml
 from functions.shift_dict_xml import close_shift_xml, open_shift_xml, topup_pmvc_xml
 from functions.test_connect import test_zr_connection
-from functions.xml_resp_parser import current_shift_response, get_status_code, open_shift_response, processshift
-from globals.global_vars import zr_data, glob_vals, configuration_data, data_validated, validated
+from functions.xml_resp_parser import current_shift_response, get_status_code, open_shift_response, parse_template_consumer, parse_templates_company
+from globals.global_vars import zr_data, glob_vals, configuration_data, data_validated
 from functions.load_data import read_data_with_header
 
 ctk.set_appearance_mode("system")
@@ -97,8 +97,7 @@ class PAYG_ImportTool(ctk.CTk):
     def open_tip(self):
         tips = TipsPopup(self)
         tips.open_popup_tips()
-        tips.grab_set()  
-        logger.info("TIPS Window opened ")
+        logger.info("TIPS Window opened !")
             
             
     def setup_ui(self):
@@ -672,13 +671,15 @@ class PAYG_ImportTool(ctk.CTk):
     def load_file_data(self):
         logger.debug("Load Data Button Clicked")
         logger.info("Data Loading in progress...")
-
+            
+            
         path = self.path_entry.get().strip()
         header_state = self.no_headers_var.get()
 
         if not path:
             self.custom_error_dialog("Error", "Please enter a file path or choose a file.")
             return
+
 
         try:
             result = read_data_with_header(path, header=header_state)
@@ -948,6 +949,73 @@ class PAYG_ImportTool(ctk.CTk):
 
         logger.info("Starting data validation process")
         sleep(1)
+                
+        logger.info("Checking Templates Existance ")
+        status_tempalte, details_tempalte = self.api_client.get_company_templates()
+        logger.debug(details_tempalte)
+        
+        templates = parse_templates_company(details_tempalte)
+        logger.debug(templates)
+        
+
+        
+        
+        logger.info("Checking Templates Existance ")
+        status_tempalte, details_tempalte = self.api_client.get_company_templates()
+        logger.debug(details_tempalte)
+        
+        templates = parse_templates_company(details_tempalte)
+        logger.debug(templates)
+        
+        
+        logger.info("Checking Templates Existance ")
+        status_tempalte, details_tempalte = self.api_client.get_consumer_templates()
+        logger.debug(details_tempalte)
+    
+        
+        templates = parse_template_consumer(details_tempalte)
+        logger.debug(templates)
+        
+        
+        season_parker_template = self.template1_var.get()
+        pmvc_template = self.template2_var.get()
+       
+        expected_pmvc_name = 'Sample Participant PMVC'
+        expected_season_parker_name = 'Sample Particpant'
+
+        
+        # Check if the PMVC template exists
+        if expected_pmvc_name not in templates or pmvc_template not in templates[expected_pmvc_name]:
+            logger.error(f"PMVC template '{pmvc_template}' does not exist.")
+            
+            response = self.custom_retry_continue_dialog(
+                    "Template Validation Error",
+                    f"Template PMVC not found in system"
+                )
+            
+            if response == "exit":
+                popup.destroy()
+                return        
+            else:
+                logger.info("Templates PMVC exist")
+
+        # Check if the Season Parker template exists
+        if expected_season_parker_name not in templates or season_parker_template not in templates[expected_season_parker_name]:
+            logger.error(f"Season Parker template '{season_parker_template}' does not exist.")
+            
+            response = self.custom_retry_continue_dialog(
+                    "Template Validation Error",
+                    f"Template No found in system"
+                )
+            
+            if response == "exit":
+                popup.destroy()
+                return        
+            else:
+                logger.info("Templates SEASON PARKER exist")
+        
+
+        
         
         header_state = self.no_headers_var.get()
         popup.update_status(f"Header State: {'No Headers' if header_state else 'Headers Present'}  ")
@@ -956,7 +1024,7 @@ class PAYG_ImportTool(ctk.CTk):
         file_path = self.path_entry.get()
         popup.update_status("Reading CSV file...  ")
         logger.info(f"Attempting to read CSV file: {file_path}")
-        popup.update_progress(10)  # Start at 0%
+        popup.update_progress(10)   
 
         sleep(1)
 
@@ -964,7 +1032,7 @@ class PAYG_ImportTool(ctk.CTk):
             file_data = read_data_with_header(file_path, header_state)
             logger.debug(f"CSV data read successfully. First few rows: {file_data[:5]}")
             popup.show_success("CSV file read successfully  ")
-            popup.update_progress(15)  # Start at 0%
+            popup.update_progress(15)  
         except Exception as e:
             self.validation.configure(text="Error Reading File ❌", fg_color="red")
             logger.error(f"Failed to read CSV file: {str(e)}")
@@ -975,7 +1043,7 @@ class PAYG_ImportTool(ctk.CTk):
             popup.enable_ok_button()
             return
 
-        popup.update_status("Processing selected fields...   \n")
+        popup.update_status("Processing selected fields ...   \n")
         logger.info("Mapping selected fields to data columns")
         mymappingdict = {}
         popup.update_progress(20)
@@ -1019,11 +1087,13 @@ class PAYG_ImportTool(ctk.CTk):
                     company_ids.add(cid)
                     logger.info(f"Validated company: {row.get('Company_Name', 'Unknown')} (ID: {cid})")
                     popup.show_success(f"Validated company in file : {row.get('Company_Name', 'Unknown')} (ID: {cid})  ")
+                    
+            
             except CompanyValidationError as e:
                 error_message = str(e)
                 self.validation.configure(text="Error Validation ❌", fg_color="red")
                 logger.error(f"Company validation failed: {error_message}")
-                self.config_window.after(2000, lambda: self.validation.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
+                self.config_window.after(2000, lambda: self.validation.configure(text="Validation", fg_color='dodgerblue3', state="normal"))
                 self.process.configure(state="normal")
 
                 popup.destroy()
@@ -1034,8 +1104,7 @@ class PAYG_ImportTool(ctk.CTk):
                 if response == "exit":
                     popup.destroy()
                     return
-            except Exception as e:
-                logger.error(f'Unexpected error during company validation: {str(e)}')
+
 
             # Participant validation
             try:
@@ -1048,7 +1117,7 @@ class PAYG_ImportTool(ctk.CTk):
                 self.validation.configure(text="Error Validation ❌", fg_color="red")
                 self.process.configure(state="normal")
                 logger.error(f"Consumer validation failed: {error_message}")
-                self.config_window.after(2000, lambda: self.validation.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
+                self.config_window.after(2000, lambda: self.validation.configure(text="Validation", fg_color='dodgerblue3', state="normal"))
 
                 popup.destroy()
                 response = self.custom_retry_continue_dialog(
@@ -1058,6 +1127,7 @@ class PAYG_ImportTool(ctk.CTk):
                 if response == "exit":
                     popup.destroy()
                     return
+                
         popup.update_progress(30)
         sleep(1)
         self.validation.configure(text="Validation Success ✔️", fg_color="green")
@@ -1092,34 +1162,9 @@ class PAYG_ImportTool(ctk.CTk):
         popup.update_progress(40)
         logger.debug(mylistc_data)
         print('\n')
-        logger.debug(mylistp_data)
+
         
-        for rowc in mylistc_data:
-            company_id = rowc.get('Company_id')
-            company_name = rowc.get('Company_Name')
-            popup.update_status(f"Processing company: {company_name}  ")
-                
-            status_code, company_details = self.api_client.get_company_details(company_id)
-            logger.debug(f"Company details {company_name} - {company_id}: {company_details}")
-            
-            sleep(timeout)
-            
-            if status_code != 404:
-                popup.show_success(f"Company ID {company_id} found  ")
-                
-            else:
-                popup.show_error(f"Company ID {company_id} not found. Creating new company...  ")
-                try:
-                    xml_comp_data = contract_to_xml(rowc)
-                    status_code, result = self.api_client.create_company(xml_comp_data)
-                    
-                    if status_code == 201:
-                        popup.show_success(f"Company ID {company_id} created successfully  ")
-                    else:
-                        popup.show_error(f"Failed to create Company ID {company_id}. Status code: {status_code}  ")
-                except Exception as e:
-                    popup.show_error(f"Error creating Company {company_id} -- ERROR : {e}  ")
-            
+
         popup.update_progress(80)
         
         popup.show_success(" Checking Company's in System Ended")

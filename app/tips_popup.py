@@ -27,7 +27,9 @@ Tips and Instructions:
 
 ⦿ If you check the (PMVC Topup) ensure that the file contains Amount values without commas, periods, or special characters.
 
-⦿ Verify that all template values are the same on the ZR server.
+⦿ Check the amount like this foramt  1£ / 1$ == 100.
+
+⦿ Verify that all template values are the same on the ZR server. For better experiance, set default values for most important fields.
 
 ⦿ Click 'Validate Data' to check for errors or inconsistencies.
 
@@ -69,7 +71,6 @@ Tips and Instructions:
     def open_popup_tips(self):
         if self.agree_var.get():
             self.destroy()
-
         else:
             self.continue_button.configure(text="Please agree to the instructions", fg_color="red")
             

@@ -31,6 +31,8 @@ class Company_validation(BaseModel):
             
             raise CompanyValidationError(f"Value {value} is out of range for {info.field_name}. \n Must be between 2 and 99999.")
         return value
+       
+                
 
     @field_validator('Company_ValidUntil', 'Company_ValidFrom', mode='before')
     def validate_date_format(cls, value, info):
@@ -69,6 +71,19 @@ class Company_validation(BaseModel):
 
 
 
+    
+"""     
+@field_validator('Company_id', mode='before')
+    def check_company_exist(cls, value):
+        value = int(value)
+        status_code, company_details = APIClient().get_company_details(value)
+        if status_code == 200:
+            logger.warning(f"Company details for ID {value}: {company_details}")
+            raise CompanyValidationError(f"The field {cls.__name__} contain a Company ID : {value} already exist in system")
+        else:
+            logger.info(f"Company ID {value} is not found in system.")
+            return value  
+"""   
 
 
 class Consumer_validation(BaseModel):

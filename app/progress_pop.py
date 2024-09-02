@@ -32,12 +32,14 @@ class ProcessingPopup(ctk.CTkToplevel):
         self.ok_button.configure(state="disabled")  # Initially disabled
 
     def update_status(self, message):
-        self.text_widget.configure(state="normal")
-
-        self.text_widget.insert("end", message + "\n")
-        self.text_widget.see("end")
-        self.text_widget.configure(state="disabled")
-        self.update()
+        if self.winfo_exists():  # Check if the widget exists
+            self.text_widget.configure(state="normal")
+            self.text_widget.insert("end", message + "\n")
+            self.text_widget.see("end")
+            self.text_widget.configure(state="disabled")
+            self.update()
+        else:
+            print("Attempted to update a destroyed widget.")
 
     def enable_ok_button(self):
         self.ok_button.configure(state="normal")
@@ -62,7 +64,7 @@ class ProcessingPopup(ctk.CTkToplevel):
 
     def update_progress(self, progress):
         """Updates the progress bar and percentage label."""
-        self.progress_bar.set(progress / 100.0)  # Set the progress bar value (0.0 to 1.0)
+        self.progress_bar.set(progress / 100.0)  
         self.percentage_label.configure(text=f"{progress}%")  # Update the percentage label
         self.update()  
 

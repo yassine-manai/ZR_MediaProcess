@@ -1,4 +1,3 @@
-from tkinter import PhotoImage
 from app.import_tool import PAYG_ImportTool
 
 
