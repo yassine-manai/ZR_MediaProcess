@@ -94,6 +94,12 @@ class PAYG_ImportTool(ctk.CTk):
             tips_popup = TipsPopup(self)
             tips_popup.grab_set()  
             
+    def open_tip(self):
+        tips = TipsPopup(self)
+        tips.open_popup_tips()
+        tips.grab_set()  
+        logger.info("TIPS Window opened ")
+            
             
     def setup_ui(self):
         self.grid_columnconfigure(0, weight=1)
@@ -208,7 +214,7 @@ class PAYG_ImportTool(ctk.CTk):
             height=30,
             fg_color="white",
             hover_color=("gray70", "gray30"),
-            command=self.show_tips_popup
+            command=self.open_tip
         ).grid(row=0, column=3, sticky="e", padx=(0, 10))
 # ------------------------------------- Titile Frame - Compns ----------------------------------------------------
     
@@ -763,12 +769,12 @@ class PAYG_ImportTool(ctk.CTk):
         if status == "success":
             self.file_stat = True
             self.load_data_button.configure(text="✔ Data Loaded", fg_color="green")
-            self.button1.configure(text=f"Validate Data", state="normal", fg_color='dodgerblue3')
+            self.validation.configure(text=f"Validate Data", state="normal", fg_color='dodgerblue3')
 
         if status == "error":
             self.file_stat = True
             self.load_data_button.configure(text="✘ Error", fg_color="red")
-            self.button1.configure(text=f"Error Reading file ❌", fg_color="red", state="normal")
+            self.validation.configure(text=f"Error Reading file ❌", fg_color="red", state="normal")
 
     def check_mandatory_fields(self, *args):
         all_selected = all(
@@ -777,8 +783,8 @@ class PAYG_ImportTool(ctk.CTk):
         )
         
         # The status icon in this function is unrelated to data load status
-        self.button2.configure(state="normal" if all_selected else "disabled")
-        self.button1.configure(state="normal" if all_selected else "disabled")
+        self.process.configure(state="normal" if all_selected else "disabled")
+        self.validation.configure(state="normal" if all_selected else "disabled")
 
     def update_columns(self, *args):
         pmvc_fields = ["Amount", "Participant_Type"]
@@ -916,22 +922,22 @@ class PAYG_ImportTool(ctk.CTk):
         
 
         # Button 1: Validate DAta 
-        self.button1 = ctk.CTkButton(button_frame, width=160, height=35, text="Validate Data", state="normal", command=self.validating_data)
-        self.button1.grid(row=0, column=0, padx=5, pady=10)
+        self.validation = ctk.CTkButton(button_frame, width=160, height=35, text="Validate Data", state="normal", command=self.validating_data)
+        self.validation.grid(row=0, column=0, padx=5, pady=10)
         
         # Timeline Label
         self.timeline_label = ctk.CTkLabel(button_frame, text="-------------------------------------------------------")
         self.timeline_label.grid(row=0, column=1, padx=5, pady=20)
         
         # Button 2: Start Process
-        self.button2 = ctk.CTkButton(button_frame, width=160, height=35, text="Start Process", command=self.main_process, state="normal")
-        self.button2.grid(row=0, column=2, padx=5, pady=10)
+        self.process = ctk.CTkButton(button_frame, width=160, height=35, text="Start Process", command=self.main_process, state="disabled")
+        self.process.grid(row=0, column=2, padx=5, pady=10)
         
     def validating_data(self):
         global data_validated, configuration_data   
         shifts = configuration_data
 
-        self.button1.configure(text="Validating data ⏳", state="normal")
+        self.validation.configure(text="Validating data ⏳", state="normal")
 
         popup = ProcessingPopup(self)
         popup.update_status("Initializing data validation process... ")        
@@ -960,10 +966,10 @@ class PAYG_ImportTool(ctk.CTk):
             popup.show_success("CSV file read successfully  ")
             popup.update_progress(15)  # Start at 0%
         except Exception as e:
-            self.button1.configure(text="Error Reading File ❌", fg_color="red")
+            self.validation.configure(text="Error Reading File ❌", fg_color="red")
             logger.error(f"Failed to read CSV file: {str(e)}")
             
-            self.config_window.after(2000, lambda: self.button1.configure(text="Retry Process", fg_color='dodgerblue3', state="normal"))
+            self.config_window.after(2000, lambda: self.validation.configure(text="Retry Process", fg_color='dodgerblue3', state="normal"))
             
             popup.show_error(f"Failed to read CSV file: {str(e)}  ")
             popup.enable_ok_button()
@@ -1015,10 +1021,10 @@ class PAYG_ImportTool(ctk.CTk):
                     popup.show_success(f"Validated company in file : {row.get('Company_Name', 'Unknown')} (ID: {cid})  ")
             except CompanyValidationError as e:
                 error_message = str(e)
-                self.button1.configure(text="Error Validation ❌", fg_color="red")
+                self.validation.configure(text="Error Validation ❌", fg_color="red")
                 logger.error(f"Company validation failed: {error_message}")
-                self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
-                self.button2.configure(state="normal")
+                self.config_window.after(2000, lambda: self.validation.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
+                self.process.configure(state="normal")
 
                 popup.destroy()
                 response = self.custom_retry_continue_dialog(
@@ -1039,10 +1045,10 @@ class PAYG_ImportTool(ctk.CTk):
                 popup.show_success(f"Validated participant in file : {row.get('Participant_Id', 'Unknown')}")
             except ConsumerValidationError as e:
                 error_message = str(e)
-                self.button1.configure(text="Error Validation ❌", fg_color="red")
-                self.button2.configure(state="normal")
+                self.validation.configure(text="Error Validation ❌", fg_color="red")
+                self.process.configure(state="normal")
                 logger.error(f"Consumer validation failed: {error_message}")
-                self.config_window.after(2000, lambda: self.button1.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
+                self.config_window.after(2000, lambda: self.validation.configure(text="Retry Validation", fg_color='dodgerblue3', state="normal"))
 
                 popup.destroy()
                 response = self.custom_retry_continue_dialog(
@@ -1054,9 +1060,9 @@ class PAYG_ImportTool(ctk.CTk):
                     return
         popup.update_progress(30)
         sleep(1)
-        self.button1.configure(text="Validation file data success ✔️", fg_color="green")
-        self.button2.configure(state="normal")
-        self.button1.configure(state="normal")
+        self.validation.configure(text="Validation Success ✔️", fg_color="green")
+        self.process.configure(state="normal")
+        self.validation.configure(state="normal")
 
         logger.info("Data validation completed successfully")
         popup.show_success("Data Validation Success ")
@@ -1064,9 +1070,8 @@ class PAYG_ImportTool(ctk.CTk):
         logger.debug(f"Validated companies: {len(data_validated['mylistc'])}")
         logger.debug(f"Validated participants: {len(data_validated['mylistp'])}")
         
-        sleep(2)
-        
-        self.button1.configure(text="Checking data with ZR ⏳", state="normal",fg_color='dodgerblue3')
+        sleep(1)
+        self.validation.configure(text="Checking data with ZR ⏳", state="normal",fg_color='dodgerblue3')
 
 
         popup.update_status(" Checking Company's in System Started . . .   ")
@@ -1126,63 +1131,14 @@ class PAYG_ImportTool(ctk.CTk):
                 
         popup.update_progress(60)
                
-        popup.show_success(" Checking Participant in System started...")
-        amount_mandatory = "Amount" in self.mandatory_columns
-        participant_type_mandatory = "Participant_Type" in self.mandatory_columns
-        participant_type = rowp.get('Participant_Type') if participant_type_mandatory else None
-        global glob_vals
-        template_ids = glob_vals
 
-        for rowp in mylistp_data:
-        
-            if not participant_type_mandatory:
-                participant_id = rowp.get('Participant_Id')
-                company_id = rowp.get('Company_id')
-
-                popup.update_status(f"Processing participant: {participant_id} -- Company {company_id} ")
-
-                status_code, participant_details = self.api_client.get_participant(company_id, participant_id)
-
-                if status_code != 404:
-                    popup.show_success(f"Participant ID {participant_id} found for Company ID {company_id}")
-                    logger.success(f"Participant ID {participant_id} found for Company ID {company_id}")
-                    
-                elif status_code == 500: 
-                    popup.show_error(f"An error occurred while making process   ")
-                    logger.error("An error occurred while making process")
-                    
-                
-                    if status_code != 404 or status_code != 500:
-                        popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}  ")
-                        logger.info(f"Creating new participant ID {participant_id} for Company ID {company_id}  \n")            
-                        template_id = template_ids["season_parker"]
-                        sleep(timeout)
-
-                        xml_ptcpt_data = consumer_to_xml(rowp)
-                        status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data.strip())
-
-                        if status_code == 201:
-                            popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}  ")
-                            logger.success(f"Participant ID {participant_id} created successfully for Company ID {company_id} ")
-                        else:
-                            popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}")
-                            logger.error(f"Failed to create Participant ID {participant_id}")
-                
-            
-
-        popup.show_success(" Checking Participant in System Ended...")
         #-------------------------------------------------------- END COMPANY --------------------------------------------------------
         popup.update_progress(82)
 
         sleep(1)
-        self.button1.configure(text="Checking in ZR complete ✔️", fg_color="green")
+        self.validation.configure(text="Checking in ZR complete ✔️", fg_color="green")
         logger.debug(f"------------------------------------------Validation Completed ---------------------------------------------")
         popup.update_progress(100)
-        sleep(1)
-        self.button1.configure(text="Validation Success ✔️", fg_color="green")
-
-
-        popup.show_success(" CHECKING DATA ENDED")
 
         return data_validated['mylistc'], data_validated['mylistp']
  
@@ -1194,7 +1150,7 @@ class PAYG_ImportTool(ctk.CTk):
         #mylistc_data = data_validated['mylistc']
         mylistp_data = data_validated['mylistp']
 
-        self.button2.configure(text=f"Processing ⏳", state="normal")
+        self.process.configure(text=f"Processing ⏳", state="normal")
 
         timeout = (int(shifts["timeout"])*0.001)
         
@@ -1219,7 +1175,25 @@ class PAYG_ImportTool(ctk.CTk):
             amount = rowp.get('Amount') if amount_mandatory else None
 
             popup.update_status(f"Processing participant: {participant_id} -- Company {company_id} ")
+
+            if not participant_type_mandatory:
             
+                if status_code != 404 or status_code != 500:
+                    popup.update_status(f"Creating new participant ID {participant_id} for Company ID {company_id}  ")
+                    logger.info(f"Creating new participant ID {participant_id} for Company ID {company_id}  \n")            
+                    template_id = template_ids["season_parker"]
+                    sleep(timeout)
+
+                    xml_ptcpt_data = consumer_to_xml(rowp)
+                    status_code, result = self.api_client.create_participant(company_id, template_id, xml_ptcpt_data.strip())
+
+                    if status_code == 201:
+                        popup.show_success(f"Participant ID {participant_id} created successfully for Company ID {company_id}  ")
+                        logger.success(f"Participant ID {participant_id} created successfully for Company ID {company_id} ")
+                    else:
+                        popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}")
+                        logger.error(f"Failed to create Participant ID {participant_id}")
+
             if participant_type_mandatory:
 
                 if participant_type == 2:
@@ -1337,7 +1311,7 @@ class PAYG_ImportTool(ctk.CTk):
                                 popup.show_error(f"Failed to create Participant ID {participant_id} for Company ID {company_id}. Status code: {status_code}")
 
         popup.update_status("Processed Successfully !")
-        self.button2.configure(text=f"Processed Successfully ✔", fg_color="green")
+        self.process.configure(text=f"Processed Successfully ✔", fg_color="green")
 
         popup.enable_ok_button()       
 # -----------------------------------------------------------------------------------------------------------------

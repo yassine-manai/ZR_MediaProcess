@@ -1,5 +1,31 @@
-venv
-**logs
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-**note.txt
-./build
+# Distribution / packaging
+.Python
+env/
+venv/
+build/
+lib/
+lib64/
+parts/
+var/
+logs/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+.vscode/
+
+# Environment variables
+.env
+.env.*
+
+# Local development files
+*.local
+
+

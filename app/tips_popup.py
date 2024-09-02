@@ -21,23 +21,23 @@ class TipsPopup(ctk.CTkToplevel):
         tips_text.insert("1.0", """
 Tips and Instructions:
 
-Step 1: Launch the application and review these instructions.
+⦿ Launch the application and review these instructions.
 
-Step 2: Check if your date format is the same as the date format in the file.
+⦿ Check if your date format is the same as the date format in the file.
 
-Step 3: If you check the (PMVC Topup) ensure that the file contains Amount values without commas, periods, or special characters.
+⦿ If you check the (PMVC Topup) ensure that the file contains Amount values without commas, periods, or special characters.
 
-Step 4: Verify that all template values are the same on the ZR server.
+⦿ Verify that all template values are the same on the ZR server.
 
-Step 5: Click 'Validate Data' to check for errors or inconsistencies.
+⦿ Click 'Validate Data' to check for errors or inconsistencies.
 
-Step 6: Review the validation results and make necessary corrections to your data.
+⦿ Review the validation results and make necessary corrections to your data.
 
-Step 7: Once validation is successful, click (Start Process) to begin the import.
+⦿ Once validation is successful, click (Start Process) to begin the import.
 
-Step 8: Monitor the import progress and wait for the completion message.
+⦿ Monitor the import progress and wait for the completion message.
 
-Step 9: After import, verify the data in the system for accuracy.
+⦿ After import, verify the data in the system for accuracy.
 
 
 ------------------------------------------------------------------  Enjoy using the PAYG Import Tool! ------------------------------------------------------------------
@@ -65,3 +65,11 @@ Step 9: After import, verify the data in the system for accuracy.
             self.master.open_configuration()
         else:
             self.continue_button.configure(text="Please agree to the instructions", fg_color="red")
+            
+    def open_popup_tips(self):
+        if self.agree_var.get():
+            self.destroy()
+
+        else:
+            self.continue_button.configure(text="Please agree to the instructions", fg_color="red")
+            
